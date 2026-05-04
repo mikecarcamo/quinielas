@@ -1,4 +1,12 @@
 require('dotenv').config();
+
+// Ejecutar migración al iniciar (crea tablas y datos iniciales si no existen)
+try {
+  require('./src/db/migrate');
+} catch (e) {
+  console.error('Error en migración:', e.message);
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');

@@ -114,5 +114,7 @@ if (matchCount.cnt === 0) {
   console.log(`${FIXTURE_2026.length} partidos insertados.`);
 }
 
-db.close();
+if (require.main === module) {
+  db.close();
+}
 console.log('Migración completada.');
