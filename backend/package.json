@@ -6,7 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "migrate": "node src/db/migrate.js"
+    "migrate": "node src/db/migrate.js",
+    "seed-demo": "node scripts/seed-demo.js",
+    "simulate": "node scripts/simulate-scores.js",
+    "cleanup-demo": "node scripts/cleanup-demo.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
