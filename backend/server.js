@@ -7,6 +7,28 @@ try {
   console.error('Error en migración:', e.message);
 }
 
+// Migración incremental: agregar columna hora si no existe y poblarla
+try {
+  const db = require('./src/db/database');
+  const cols = db.pragma('table_info(matches)').map(c => c.name);
+  if (!cols.includes('hora')) {
+    db.exec("ALTER TABLE matches ADD COLUMN hora TEXT");
+    console.log('Columna hora agregada a matches');
+    // Poblar horas desde el fixture
+    const { FIXTURE_2026 } = require('./src/db/fixture2026');
+    const update = db.prepare('UPDATE matches SET hora = ? WHERE local = ? AND visitante = ? AND fecha = ?');
+    const updateAll = db.transaction(() => {
+      for (const m of FIXTURE_2026) {
+        update.run(m.hora, m.local, m.visitante, m.fecha);
+      }
+    });
+    updateAll();
+    console.log('Horas de partidos actualizadas');
+  }
+} catch (e) {
+  console.error('Error en migración incremental hora:', e.message);
+}
+
 const express = require('express');
 const cors = require('cors');
 const path = require('path');

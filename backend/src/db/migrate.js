@@ -44,6 +44,7 @@ db.exec(`
     fecha TEXT NOT NULL,
     grupo TEXT,
     fase TEXT NOT NULL DEFAULT 'grupos',
+    hora TEXT,
     goles_local_real INTEGER,
     goles_visitante_real INTEGER,
     status TEXT NOT NULL DEFAULT 'pendiente' CHECK(status IN ('pendiente','finalizado')),
@@ -104,8 +105,8 @@ const matchCount = db.prepare('SELECT COUNT(*) as cnt FROM matches WHERE event_i
 if (matchCount.cnt === 0) {
   const { FIXTURE_2026 } = require('./fixture2026');
   const insertMatch = db.prepare(`
-    INSERT INTO matches (event_id, local, visitante, fecha, grupo, fase)
-    VALUES (@event_id, @local, @visitante, @fecha, @grupo, @fase)
+    INSERT INTO matches (event_id, local, visitante, fecha, hora, grupo, fase)
+    VALUES (@event_id, @local, @visitante, @fecha, @hora, @grupo, @fase)
   `);
   const insertMany = db.transaction((matches) => {
     for (const m of matches) insertMatch.run({ ...m, event_id: eventId });

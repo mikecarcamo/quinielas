@@ -21,7 +21,7 @@ function isPredFilled(p) {
 
 
 function MatchPredictionRow({ match, value, onChange, disabled }) {
-  const fecha = formatDate(match.fecha);
+  const hora = match.hora || '—';
   const filled = isPredFilled(value);
   const closed = isPastDeadline(match.fecha);
   const finalizado = match.status === 'finalizado';
@@ -44,8 +44,8 @@ function MatchPredictionRow({ match, value, onChange, disabled }) {
       border: '1px solid', borderColor: finalizado ? 'divider' : filled ? 'primary.dark' : 'divider',
       opacity: isLocked && !filled ? 0.6 : 1,
     }}>
-      <Typography variant="caption" color="text.secondary" sx={{ width: 70, flexShrink: 0, fontSize: 11 }}>
-        {fecha}
+      <Typography variant="caption" color="text.secondary" sx={{ width: 44, flexShrink: 0, fontSize: 11, fontWeight: 600 }}>
+        {hora}
       </Typography>
 
       <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, minWidth: 0 }}>
