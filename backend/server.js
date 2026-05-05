@@ -73,6 +73,16 @@ app.use('/api/events', eventRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
+// Seed demo: se activa con variable de entorno SEED_DEMO=true en Railway
+if (process.env.SEED_DEMO === 'true') {
+  try {
+    require('./scripts/seed-demo');
+    console.log('Seed demo ejecutado al arrancar');
+  } catch (e) {
+    console.error('Error en seed demo:', e.message);
+  }
+}
+
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Error interno del servidor' });
