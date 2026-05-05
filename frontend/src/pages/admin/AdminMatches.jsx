@@ -56,7 +56,7 @@ export default function AdminMatches() {
     }
   };
 
-  const grupos = [...new Set(matches.map((m) => m.grupo))].filter(Boolean).sort();
+  const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
 
@@ -68,66 +68,65 @@ export default function AdminMatches() {
       </Box>
       {success && <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess('')}>{success}</Alert>}
 
-      {grupos.map((g) => (
-        <Box key={g} sx={{ mb: 3 }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ mb: 1 }}>Grupo {g}</Typography>
-          <TableContainer component={Paper} variant="outlined">
-            <Table size="small">
-              <TableHead>
-                <TableRow sx={{ bgcolor: 'background.default' }}>
-                  <TableCell>Partido</TableCell>
-                  <TableCell align="center">Fecha</TableCell>
-                  <TableCell align="center">Resultado</TableCell>
-                  <TableCell align="center">Estado</TableCell>
-                  <TableCell align="center">Acción</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {matches.filter((m) => m.grupo === g).map((m) => (
-                  <TableRow key={m.id} hover>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <FlagImg country={m.local} size={18} />
-                        <Typography variant="body2" fontWeight={600}>{m.local}</Typography>
-                        <Typography variant="body2" color="text.secondary">vs</Typography>
-                        <FlagImg country={m.visitante} size={18} />
-                        <Typography variant="body2" fontWeight={600}>{m.visitante}</Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="caption">{formatDate(m.fecha, { day: '2-digit', month: 'short' })}</Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      {m.status === 'finalizado' ? (
-                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-                          <Typography fontWeight={700}>{m.goles_local_real} – {m.goles_visitante_real}</Typography>
-                          {!!m.resultado_editado && (
-                            <Tooltip title="Resultado corregido">
-                              <Typography component="span" color="warning.main" fontWeight={700} fontSize={14}>*</Typography>
-                            </Tooltip>
-                          )}
-                        </Box>
-                      ) : (
-                        <Typography color="text.secondary">—</Typography>
+      <TableContainer component={Paper} variant="outlined">
+        <Table size="small">
+          <TableHead>
+            <TableRow sx={{ bgcolor: 'background.default' }}>
+              <TableCell>Partido</TableCell>
+              <TableCell align="center">Grupo</TableCell>
+              <TableCell align="center">Fecha</TableCell>
+              <TableCell align="center">Resultado</TableCell>
+              <TableCell align="center">Estado</TableCell>
+              <TableCell align="center">Acción</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {sortedMatches.map((m) => (
+              <TableRow key={m.id} hover>
+                <TableCell>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                    <FlagImg country={m.local} size={18} />
+                    <Typography variant="body2" fontWeight={600}>{m.local}</Typography>
+                    <Typography variant="body2" color="text.secondary">vs</Typography>
+                    <FlagImg country={m.visitante} size={18} />
+                    <Typography variant="body2" fontWeight={600}>{m.visitante}</Typography>
+                  </Box>
+                </TableCell>
+                <TableCell align="center">
+                  <Chip label={`G ${m.grupo}`} size="small" variant="outlined" />
+                </TableCell>
+                <TableCell align="center">
+                  <Typography variant="caption">{formatDate(m.fecha, { day: '2-digit', month: 'short' })}</Typography>
+                </TableCell>
+                <TableCell align="center">
+                  {m.status === 'finalizado' ? (
+                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+                      <Typography fontWeight={700}>{m.goles_local_real} – {m.goles_visitante_real}</Typography>
+                      {!!m.resultado_editado && (
+                        <Tooltip title="Resultado corregido">
+                          <Typography component="span" color="warning.main" fontWeight={700} fontSize={14}>*</Typography>
+                        </Tooltip>
                       )}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Chip label={m.status} size="small" color={m.status === 'finalizado' ? 'success' : 'default'} />
-                    </TableCell>
-                    <TableCell align="center">
-                      <Tooltip title="Cargar resultado">
-                        <IconButton size="small" onClick={() => openDialog(m)} color="primary">
-                          {m.status === 'finalizado' ? <CheckCircleIcon /> : <EditIcon />}
-                        </IconButton>
-                      </Tooltip>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Box>
-      ))}
+                    </Box>
+                  ) : (
+                    <Typography color="text.secondary">—</Typography>
+                  )}
+                </TableCell>
+                <TableCell align="center">
+                  <Chip label={m.status} size="small" color={m.status === 'finalizado' ? 'success' : 'default'} />
+                </TableCell>
+                <TableCell align="center">
+                  <Tooltip title="Cargar resultado">
+                    <IconButton size="small" onClick={() => openDialog(m)} color="primary">
+                      {m.status === 'finalizado' ? <CheckCircleIcon /> : <EditIcon />}
+                    </IconButton>
+                  </Tooltip>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
 
       <Dialog open={dialog.open} onClose={() => setDialog({ open: false, match: null })} maxWidth="xs" fullWidth>
         <DialogTitle>
