@@ -37,7 +37,8 @@ router.post('/upload', verifyToken, upload.single('comprobante'), (req, res) => 
     return res.status(400).json({ error: 'event_id y comprobante requeridos' });
   }
 
-  const fileUrl = `/uploads/comprobantes/${req.file.filename}`;
+  const baseUrl = process.env.BACKEND_URL || '';
+  const fileUrl = `${baseUrl}/uploads/comprobantes/${req.file.filename}`;
   const existing = db.prepare('SELECT id, status FROM payments WHERE user_id = ? AND event_id = ?').get(userId, event_id);
 
   if (existing) {
