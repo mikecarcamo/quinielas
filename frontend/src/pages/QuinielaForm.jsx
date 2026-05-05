@@ -44,9 +44,14 @@ function MatchPredictionRow({ match, value, onChange, disabled }) {
       border: '1px solid', borderColor: finalizado ? 'divider' : filled ? 'primary.dark' : 'divider',
       opacity: isLocked && !filled ? 0.6 : 1,
     }}>
-      <Typography variant="caption" color="text.secondary" sx={{ width: 44, flexShrink: 0, fontSize: 11, fontWeight: 600 }}>
-        {hora}
-      </Typography>
+      <Box sx={{ width: 70, flexShrink: 0, textAlign: 'center' }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, display: 'block', lineHeight: 1.2 }}>
+          {formatDate(match.fecha, { day: '2-digit', month: 'short' })}
+        </Typography>
+        <Typography variant="caption" color="text.primary" sx={{ fontSize: 11, fontWeight: 700, display: 'block', lineHeight: 1.2 }}>
+          {hora}
+        </Typography>
+      </Box>
 
       <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, minWidth: 0 }}>
         <Typography variant="body2" fontWeight={600} noWrap>{match.local}</Typography>
