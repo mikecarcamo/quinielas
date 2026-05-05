@@ -130,6 +130,27 @@ app.post('/api/admin/seed-demo', checkSecret, (req, res) => {
   }
 });
 
+app.post('/api/admin/reset-users', checkSecret, (req, res) => {
+  try {
+    const db = require('./src/db/database');
+    const users = db.prepare(`SELECT id FROM users WHERE role = 'user'`).all();
+    const ids = users.map(u => u.id);
+    let result = { usuarios: 0, predicciones: 0, pagos: 0, partidos_reseteados: 0 };
+    db.transaction(() => {
+      if (ids.length) {
+        const ph = ids.map(() => '?').join(',');
+        result.predicciones = db.prepare(`DELETE FROM predictions WHERE user_id IN (${ph})`).run(...ids).changes;
+        result.pagos        = db.prepare(`DELETE FROM payments WHERE user_id IN (${ph})`).run(...ids).changes;
+        result.usuarios     = db.prepare(`DELETE FROM users WHERE id IN (${ph})`).run(...ids).changes;
+      }
+      result.partidos_reseteados = db.prepare(`UPDATE matches SET goles_local_real=NULL, goles_visitante_real=NULL, status='pendiente', resultado_editado=0 WHERE status='finalizado'`).run().changes;
+    })();
+    res.json({ ok: true, message: 'Reset completo', ...result });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 app.post('/api/admin/cleanup-demo', checkSecret, (req, res) => {
   try {
     const db = require('./src/db/database');
