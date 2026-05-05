@@ -38,48 +38,56 @@ function MatchPredictionRow({ match, value, onChange, disabled }) {
 
   return (
     <Box sx={{
-      display: 'flex', alignItems: 'center', gap: 1, py: 1, px: 1.5,
-      borderRadius: 2, mb: 0.5,
+      py: 1, px: 1.5, borderRadius: 2, mb: 0.5,
       bgcolor: finalizado ? 'rgba(255,255,255,0.02)' : closed ? 'rgba(255,0,0,0.04)' : filled ? 'rgba(212,160,23,0.06)' : 'background.default',
       border: '1px solid', borderColor: finalizado ? 'divider' : filled ? 'primary.dark' : 'divider',
       opacity: isLocked && !filled ? 0.6 : 1,
     }}>
-      <Box sx={{ width: 70, flexShrink: 0, textAlign: 'center' }}>
-        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10, display: 'block', lineHeight: 1.2 }}>
-          {formatDate(match.fecha, { day: '2-digit', month: 'short' })}
+      {/* Fila superior: hora + status */}
+      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+        <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
+          {formatDate(match.fecha, { day: '2-digit', month: 'short' })} · {hora}
         </Typography>
-        <Typography variant="caption" color="text.primary" sx={{ fontSize: 11, fontWeight: 700, display: 'block', lineHeight: 1.2 }}>
-          {hora}
-        </Typography>
+        {statusChip}
       </Box>
 
-      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, minWidth: 0 }}>
-        <Typography variant="body2" fontWeight={600} noWrap>{match.local}</Typography>
-        <FlagImg country={match.local} size={18} />
+      {/* Fila principal: local — score — visitante */}
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
+        {/* Equipo local */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 0.5, minWidth: 0 }}>
+          <Typography variant="body2" fontWeight={600} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: { xs: 'normal', sm: 'nowrap' }, fontSize: { xs: 11, sm: 14 }, textAlign: 'right', lineHeight: 1.2 }}>
+            {match.local}
+          </Typography>
+          <FlagImg country={match.local} size={18} />
+        </Box>
+
+        {/* Inputs marcador */}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexShrink: 0 }}>
+          <TextField
+            size="small" type="number"
+            inputProps={{ min: 0, max: 20, style: { width: 32, textAlign: 'center', padding: '5px 0', fontWeight: 700, fontSize: 15 } }}
+            value={value?.goles_local ?? ''} disabled={isLocked}
+            onChange={(e) => onChange(match.id, 'goles_local', parseInt(e.target.value, 10))}
+            sx={{ width: 46, flexShrink: 0 }}
+          />
+          <Typography variant="body1" fontWeight={700} color="text.secondary" sx={{ flexShrink: 0 }}>–</Typography>
+          <TextField
+            size="small" type="number"
+            inputProps={{ min: 0, max: 20, style: { width: 32, textAlign: 'center', padding: '5px 0', fontWeight: 700, fontSize: 15 } }}
+            value={value?.goles_visitante ?? ''} disabled={isLocked}
+            onChange={(e) => onChange(match.id, 'goles_visitante', parseInt(e.target.value, 10))}
+            sx={{ width: 46, flexShrink: 0 }}
+          />
+        </Box>
+
+        {/* Equipo visitante */}
+        <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
+          <FlagImg country={match.visitante} size={18} />
+          <Typography variant="body2" fontWeight={600} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: { xs: 'normal', sm: 'nowrap' }, fontSize: { xs: 11, sm: 14 }, lineHeight: 1.2 }}>
+            {match.visitante}
+          </Typography>
+        </Box>
       </Box>
-
-      <TextField
-        size="small" type="number"
-        inputProps={{ min: 0, max: 20, style: { width: 36, textAlign: 'center', padding: '5px 0', fontWeight: 700 } }}
-        value={value?.goles_local ?? ''} disabled={isLocked}
-        onChange={(e) => onChange(match.id, 'goles_local', parseInt(e.target.value, 10))}
-        sx={{ width: 50, flexShrink: 0 }}
-      />
-      <Typography variant="body1" fontWeight={700} color="text.secondary" sx={{ flexShrink: 0 }}>–</Typography>
-      <TextField
-        size="small" type="number"
-        inputProps={{ min: 0, max: 20, style: { width: 36, textAlign: 'center', padding: '5px 0', fontWeight: 700 } }}
-        value={value?.goles_visitante ?? ''} disabled={isLocked}
-        onChange={(e) => onChange(match.id, 'goles_visitante', parseInt(e.target.value, 10))}
-        sx={{ width: 50, flexShrink: 0 }}
-      />
-
-      <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
-        <FlagImg country={match.visitante} size={18} />
-        <Typography variant="body2" fontWeight={600} noWrap>{match.visitante}</Typography>
-      </Box>
-
-      {statusChip}
     </Box>
   );
 }
@@ -107,7 +115,7 @@ function DaySection({ fecha, matches, predictions, onChange, disabled, index }) 
           />
         </Box>
       </AccordionSummary>
-      <AccordionDetails sx={{ pt: 0, px: 2, pb: 2 }}>
+      <AccordionDetails sx={{ pt: 0, px: { xs: 1, sm: 2 }, pb: 2 }}>
         {!complete && (
           <LinearProgress
             variant="determinate" value={(filled / total) * 100}
