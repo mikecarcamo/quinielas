@@ -96,7 +96,8 @@ export default function AdminMatches() {
                   <Chip label={`G ${m.grupo}`} size="small" variant="outlined" />
                 </TableCell>
                 <TableCell align="center">
-                  <Typography variant="caption">{formatDate(m.fecha, { day: '2-digit', month: 'short' })}</Typography>
+                  <Typography variant="caption" display="block">{formatDate(m.fecha, { day: '2-digit', month: 'short' })}</Typography>
+                  {m.hora && <Typography variant="caption" fontWeight={700} display="block">{m.hora}</Typography>}
                 </TableCell>
                 <TableCell align="center">
                   {m.status === 'finalizado' ? (
