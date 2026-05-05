@@ -73,6 +73,114 @@ app.use('/api/events', eventRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 
+// ── Endpoints temporales de administración (protegidos por ADMIN_SECRET) ──
+const ADMIN_SECRET = process.env.ADMIN_SECRET || 'quiniela-admin-2026';
+function checkSecret(req, res, next) {
+  if (req.headers['x-admin-secret'] !== ADMIN_SECRET) {
+    return res.status(401).json({ error: 'No autorizado' });
+  }
+  next();
+}
+
+app.post('/api/admin/seed-demo', checkSecret, (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const db = require('./src/db/database');
+    const DUMMY_TAG = '__DEMO__';
+    const EVENT_ID = db.prepare("SELECT id FROM events WHERE is_active=1 ORDER BY id LIMIT 1").get()?.id;
+    if (!EVENT_ID) return res.status(500).json({ error: 'No hay evento activo' });
+
+    const matches = db.prepare('SELECT id FROM matches WHERE event_id=? ORDER BY fecha ASC, hora ASC, id ASC').all(EVENT_ID);
+    if (!matches.length) return res.status(500).json({ error: 'No hay partidos' });
+
+    const OUTCOMES = [[0,0],[1,0],[0,1],[1,1],[2,0],[0,2],[2,1],[1,2],[2,2],[3,0],[0,3],[3,1],[1,3],[3,2],[4,0],[0,4]];
+    const WEIGHTS  = [3,14,12,11,11,9,11,9,5,4,3,3,2,2,1,1];
+    const TOTAL_W  = WEIGHTS.reduce((a,b)=>a+b,0);
+    function rScore() { let r=Math.random()*TOTAL_W; for(let i=0;i<OUTCOMES.length;i++){r-=WEIGHTS[i];if(r<=0)return OUTCOMES[i];} return [1,1]; }
+    function uPred(b) { const d=()=>{const r=Math.random();return r<0.4?0:r<0.7?1:-1;}; return [Math.max(0,b[0]+d()),Math.max(0,b[1]+d())]; }
+    const simResults = matches.map(m=>({match_id:m.id,score:rScore()}));
+
+    // Admin mncarcamo
+    const ADMIN_EMAIL='mncarcamo@oj.gob.gt';
+    const hash=bcrypt.hashSync('123456789',10);
+    const ex=db.prepare('SELECT id FROM users WHERE email=?').get(ADMIN_EMAIL);
+    if(ex) db.prepare("UPDATE users SET password=?,role='admin',is_active=1,nombre_completo=? WHERE id=?").run(hash,'Administrador MNC',ex.id);
+    else db.prepare("INSERT INTO users (nombre_completo,email,password,role,is_active) VALUES (?,?,?,'admin',1)").run('Administrador MNC',ADMIN_EMAIL,hash);
+
+    const NOMBRES=['Carlos López','María García','José Martínez','Ana Rodríguez','Luis Hernández','Laura Pérez','Miguel González','Sofia Ramirez','Diego Torres','Valentina Flores','Andrés Vargas','Isabella Moreno','Sebastián Jiménez','Camila Ruiz','Daniel Castro','Lucía Romero','Pablo Díaz','Fernanda Álvarez','Emilio Morales','Natalia Gutiérrez','Ricardo Mendoza','Paola Reyes','Fernando Soto','Daniela Cruz','Alejandro Núñez','Mariana Ramos','Rodrigo Ortiz','Valeria Gómez','Esteban Castillo','Gabriela Guerrero','Julián Medina','Claudia Herrera','Tomás Aguilar','Patricia Vega','Mateo Ríos','Elena Sandoval','Oscar Campos','Teresa Domínguez','Nicolás Espinoza','Andrea Peña'];
+    const hash2=bcrypt.hashSync('Demo1234!',10);
+    const iUser=db.prepare("INSERT OR IGNORE INTO users (nombre_completo,email,password,role,is_active) VALUES (?,?,?,'user',1)");
+    const iPay =db.prepare("INSERT OR IGNORE INTO payments (user_id,event_id,comprobante_url,status) VALUES (?,?,'demo.pdf','aprobado')");
+    const iPred=db.prepare("INSERT OR IGNORE INTO predictions (user_id,match_id,goles_local_pred,goles_visitante_pred,puntos_obtenidos) VALUES (?,?,?,?,0)");
+    let creados=0;
+    db.transaction(()=>{
+      for(let i=0;i<40;i++){
+        const email=`demo_user_${i+1}${DUMMY_TAG}@quiniela.test`;
+        iUser.run(`${NOMBRES[i]} ${DUMMY_TAG}`,email,hash2);
+        const u=db.prepare('SELECT id FROM users WHERE email=?').get(email);
+        if(!u) continue;
+        iPay.run(u.id,EVENT_ID);
+        for(const r of simResults){const[l,v]=uPred(r.score);iPred.run(u.id,r.match_id,l,v);}
+        creados++;
+      }
+    })();
+    res.json({ ok:true, message:`Admin creado. ${creados} usuarios demo con ${matches.length} predicciones cada uno.` });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/cleanup-demo', checkSecret, (req, res) => {
+  try {
+    const db = require('./src/db/database');
+    const DUMMY_TAG = '__DEMO__';
+    const dummies = db.prepare(`SELECT id FROM users WHERE email LIKE ?`).all(`%${DUMMY_TAG}%`);
+    const ids = dummies.map(u=>u.id);
+    let result = { usuarios:0, predicciones:0, pagos:0, partidos_reseteados:0 };
+    db.transaction(()=>{
+      if(ids.length){
+        const ph=ids.map(()=>'?').join(',');
+        result.predicciones=db.prepare(`DELETE FROM predictions WHERE user_id IN (${ph})`).run(...ids).changes;
+        result.pagos=db.prepare(`DELETE FROM payments WHERE user_id IN (${ph})`).run(...ids).changes;
+        result.usuarios=db.prepare(`DELETE FROM users WHERE id IN (${ph})`).run(...ids).changes;
+      }
+      result.partidos_reseteados=db.prepare("UPDATE matches SET goles_local_real=NULL,goles_visitante_real=NULL,status='pendiente',resultado_editado=0 WHERE status='finalizado'").run().changes;
+      db.prepare("UPDATE predictions SET puntos_obtenidos=0").run();
+    })();
+    res.json({ ok:true, message:'Limpieza completa', ...result });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
+app.post('/api/admin/simulate-next', checkSecret, (req, res) => {
+  try {
+    const db = require('./src/db/database');
+    const { recalculateMatchPoints } = require('./src/lib/scoring');
+    const event = db.prepare("SELECT id FROM events WHERE is_active=1 ORDER BY id LIMIT 1").get();
+    if(!event) return res.status(500).json({ error:'No hay evento activo' });
+    const { cantidad = 1 } = req.body;
+    const OUTCOMES=[[0,0],[1,0],[0,1],[1,1],[2,0],[0,2],[2,1],[1,2],[2,2],[3,0],[0,3],[3,1],[1,3],[3,2],[2,3],[4,0]];
+    const WEIGHTS=[3,14,12,11,11,9,11,9,5,4,3,3,2,2,2,1];
+    const TW=WEIGHTS.reduce((a,b)=>a+b,0);
+    function rScore(){let r=Math.random()*TW;for(let i=0;i<OUTCOMES.length;i++){r-=WEIGHTS[i];if(r<=0)return OUTCOMES[i];}return[1,1];}
+    const pending=db.prepare(`SELECT id,local,visitante,fecha,hora FROM matches WHERE event_id=? AND status='pendiente' ORDER BY fecha ASC,hora ASC,id ASC LIMIT ?`).all(event.id, cantidad);
+    if(!pending.length) return res.json({ ok:true, message:'No hay partidos pendientes', finalizados:[] });
+    const finalizados=[];
+    db.transaction(()=>{
+      for(const m of pending){
+        const[gl,gv]=rScore();
+        db.prepare("UPDATE matches SET goles_local_real=?,goles_visitante_real=?,status='finalizado',resultado_editado=0 WHERE id=?").run(gl,gv,m.id);
+        recalculateMatchPoints(db,m.id);
+        finalizados.push({partido:`${m.local} ${gl}-${gv} ${m.visitante}`,fecha:m.fecha,hora:m.hora});
+      }
+    })();
+    res.json({ ok:true, finalizados });
+  } catch(e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 // Seed demo: se activa con variable de entorno SEED_DEMO=true en Railway
 if (process.env.SEED_DEMO === 'true') {
   try {
