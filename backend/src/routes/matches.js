@@ -14,7 +14,7 @@ router.get('/', verifyToken, (req, res) => {
   if (fase)     { query += ' AND fase = ?';     params.push(fase); }
   if (status)   { query += ' AND status = ?';   params.push(status); }
 
-  query += ' ORDER BY fecha ASC, id ASC';
+  query += ' ORDER BY fecha ASC, hora ASC, id ASC';
   const matches = db.prepare(query).all(...params);
   res.json(matches);
 });
