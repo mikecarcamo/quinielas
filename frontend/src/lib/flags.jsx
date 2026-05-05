@@ -11,7 +11,7 @@ const ISO = {
   'Ecuador': 'ec', 'Venezuela': 've', 'Paraguay': 'py', 'Bolivia': 'bo',
   // UEFA
   'España': 'es', 'Francia': 'fr', 'Alemania': 'de', 'Italia': 'it',
-  'Inglaterra': 'gb', 'Escocia': 'gb', 'Gales': 'gb',
+  'Inglaterra': 'gb', 'Escocia': 'gb-sct', 'Gales': 'gb-wls',
   'Portugal': 'pt', 'Países Bajos': 'nl', 'Holanda': 'nl', 'Bélgica': 'be',
   'Croacia': 'hr', 'Serbia': 'rs', 'Dinamarca': 'dk',
   'Turquía': 'tr', 'Ucrania': 'ua', 'Austria': 'at', 'Suiza': 'ch',
