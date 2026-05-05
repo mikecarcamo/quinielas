@@ -171,7 +171,7 @@ export default function QuinielaForm() {
     }));
   }, []);
 
-  const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+  const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || a.id - b.id);
   const days = [...new Set(sortedMatches.map((m) => m.fecha))].sort();
   const openMatches = matches.filter((m) => !isPastDeadline(m.fecha));
   const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id])).length;
