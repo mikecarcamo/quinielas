@@ -22,15 +22,15 @@ const FIXTURE_2026 = [
   // ── GRUPO C: Brasil · Marruecos · Haití · Escocia ──
   { local: 'Brasil',    visitante: 'Marruecos', fecha: '2026-06-13', hora: '16:00', grupo: 'C', fase: 'grupos' }, // 11pm BST Jun 13
   { local: 'Haití',     visitante: 'Escocia',   fecha: '2026-06-13', hora: '19:00', grupo: 'C', fase: 'grupos' }, // 2am BST Jun 14 → 19:00 Jun 13
-  { local: 'Escocia',   visitante: 'Marruecos', fecha: '2026-06-19', hora: '23:00', grupo: 'C', fase: 'grupos' }, // 11pm GT Jun 19
-  { local: 'Brasil',    visitante: 'Haití',     fecha: '2026-06-19', hora: '19:30', grupo: 'C', fase: 'grupos' }, // 1:30am GT Jun 20 → 19:30 Jun 19
+  { local: 'Escocia',   visitante: 'Marruecos', fecha: '2026-06-20', hora: '23:00', grupo: 'C', fase: 'grupos' }, // 11pm GT Jun 20
+  { local: 'Brasil',    visitante: 'Haití',     fecha: '2026-06-20', hora: '01:30', grupo: 'C', fase: 'grupos' }, // 1:30am GT Jun 20
   { local: 'Escocia',   visitante: 'Brasil',    fecha: '2026-06-24', hora: '16:00', grupo: 'C', fase: 'grupos' }, // 11pm BST Jun 24
   { local: 'Marruecos', visitante: 'Haití',     fecha: '2026-06-24', hora: '16:00', grupo: 'C', fase: 'grupos' }, // 11pm BST Jun 24
 
   // ── GRUPO D: Estados Unidos · Paraguay · Australia · Turquía ──
   { local: 'Estados Unidos', visitante: 'Paraguay',  fecha: '2026-06-12', hora: '19:00', grupo: 'D', fase: 'grupos' }, // 2am BST Jun 13 → 19:00 Jun 12
   { local: 'Australia',      visitante: 'Turquía',   fecha: '2026-06-13', hora: '22:00', grupo: 'D', fase: 'grupos' }, // 5am BST Jun 14 → 22:00 Jun 13
-  { local: 'Turquía',        visitante: 'Paraguay',  fecha: '2026-06-19', hora: '22:00', grupo: 'D', fase: 'grupos' }, // 4am GT Jun 20 → 22:00 Jun 19
+  { local: 'Turquía',        visitante: 'Paraguay',  fecha: '2026-06-20', hora: '22:00', grupo: 'D', fase: 'grupos' }, // 10pm GT Jun 20
   { local: 'Estados Unidos', visitante: 'Australia', fecha: '2026-06-19', hora: '13:00', grupo: 'D', fase: 'grupos' }, // 8pm BST Jun 19
   { local: 'Turquía',        visitante: 'Estados Unidos', fecha: '2026-06-25', hora: '20:00', grupo: 'D', fase: 'grupos' }, // 3am BST Jun 26 → 20:00 Jun 25
   { local: 'Paraguay',       visitante: 'Australia', fecha: '2026-06-25', hora: '20:00', grupo: 'D', fase: 'grupos' }, // 3am BST Jun 26 → 20:00 Jun 25
