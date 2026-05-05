@@ -202,52 +202,6 @@ app.post('/api/admin/simulate-next', checkSecret, (req, res) => {
   }
 });
 
-// Seed demo: se activa con variable de entorno SEED_DEMO=true en Railway
-if (process.env.SEED_DEMO === 'true') {
-  try {
-    require('./scripts/seed-demo');
-    console.log('Seed demo ejecutado al arrancar');
-  } catch (e) {
-    console.error('Error en seed demo:', e.message);
-  }
-}
-
-// Simulador de marcadores: se activa con SIMULATE_SCORES=true en Railway
-if (process.env.SIMULATE_SCORES === 'true') {
-  const db = require('./src/db/database');
-  const { recalculateMatchPoints } = require('./src/lib/scoring');
-
-  const OUTCOMES = [
-    {s:[0,0],w:3},{s:[1,0],w:14},{s:[0,1],w:12},{s:[1,1],w:11},
-    {s:[2,0],w:11},{s:[0,2],w:9},{s:[2,1],w:11},{s:[1,2],w:9},
-    {s:[2,2],w:5},{s:[3,0],w:4},{s:[0,3],w:3},{s:[3,1],w:3},
-    {s:[1,3],w:2},{s:[3,2],w:2},{s:[2,3],w:2},{s:[4,0],w:1},
-  ];
-  const TOTAL_W = OUTCOMES.reduce((a,o)=>a+o.w,0);
-  function randomScore() {
-    let r = Math.random()*TOTAL_W;
-    for (const o of OUTCOMES) { r-=o.w; if(r<=0) return [...o.s]; }
-    return [1,1];
-  }
-
-  const event = db.prepare("SELECT id FROM events WHERE is_active=1 ORDER BY id LIMIT 1").get();
-  if (event) {
-    console.log('🚀 Simulador de marcadores iniciado (1 partido/minuto)');
-    const simInterval = setInterval(() => {
-      const next = db.prepare(`SELECT id,local,visitante,fecha,hora FROM matches WHERE event_id=? AND status='pendiente' ORDER BY fecha ASC, hora ASC, id ASC LIMIT 1`).get(event.id);
-      if (!next) {
-        console.log('🏆 Simulación completa. Todos los partidos finalizados.');
-        clearInterval(simInterval);
-        return;
-      }
-      const [gl,gv] = randomScore();
-      db.prepare(`UPDATE matches SET goles_local_real=?,goles_visitante_real=?,status='finalizado',resultado_editado=0 WHERE id=?`).run(gl,gv,next.id);
-      recalculateMatchPoints(db, next.id);
-      console.log(`⚽ ${next.local} ${gl}-${gv} ${next.visitante} (${next.fecha} ${next.hora||''})`);
-    }, 60*1000);
-  }
-}
-
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(err.status || 500).json({ error: err.message || 'Error interno del servidor' });
