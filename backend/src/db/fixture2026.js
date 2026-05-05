@@ -38,8 +38,8 @@ const FIXTURE_2026 = [
   // ── GRUPO E: Alemania · Curazao · Costa de Marfil · Ecuador ──
   { local: 'Alemania',        visitante: 'Curazao',        fecha: '2026-06-14', hora: '11:00', grupo: 'E', fase: 'grupos' }, // 6pm BST Jun 14
   { local: 'Costa de Marfil', visitante: 'Ecuador',        fecha: '2026-06-14', hora: '17:00', grupo: 'E', fase: 'grupos' }, // 12am BST Jun 15 → 17:00 Jun 14
-  { local: 'Alemania',        visitante: 'Costa de Marfil',fecha: '2026-06-20', hora: '14:00', grupo: 'E', fase: 'grupos' }, // 9pm BST Jun 20
-  { local: 'Ecuador',         visitante: 'Curazao',        fecha: '2026-06-20', hora: '18:00', grupo: 'E', fase: 'grupos' }, // 1am BST Jun 21 → 18:00 Jun 20
+  { local: 'Alemania',        visitante: 'Costa de Marfil',fecha: '2026-06-19', hora: '16:00', grupo: 'E', fase: 'grupos' }, // 4pm GT Jun 19
+  { local: 'Ecuador',         visitante: 'Curazao',        fecha: '2026-06-19', hora: '19:00', grupo: 'E', fase: 'grupos' }, // 7pm GT Jun 19
   { local: 'Ecuador',         visitante: 'Alemania',       fecha: '2026-06-25', hora: '14:00', grupo: 'E', fase: 'grupos' }, // 9pm BST Jun 25
   { local: 'Curazao',         visitante: 'Costa de Marfil',fecha: '2026-06-25', hora: '14:00', grupo: 'E', fase: 'grupos' }, // 9pm BST Jun 25
 
@@ -47,12 +47,12 @@ const FIXTURE_2026 = [
   { local: 'Países Bajos', visitante: 'Japón',        fecha: '2026-06-14', hora: '14:00', grupo: 'F', fase: 'grupos' }, // 9pm BST Jun 14
   { local: 'Suecia',       visitante: 'Túnez',        fecha: '2026-06-14', hora: '20:00', grupo: 'F', fase: 'grupos' }, // 3am BST Jun 15 → 20:00 Jun 14
   { local: 'Países Bajos', visitante: 'Suecia',       fecha: '2026-06-20', hora: '11:00', grupo: 'F', fase: 'grupos' }, // 6pm BST Jun 20
-  { local: 'Túnez',        visitante: 'Japón',        fecha: '2026-06-20', hora: '22:00', grupo: 'F', fase: 'grupos' }, // 5am BST Jun 21 → 22:00 Jun 20
+  { local: 'Túnez',        visitante: 'Japón',        fecha: '2026-06-19', hora: '22:00', grupo: 'F', fase: 'grupos' }, // 10pm GT Jun 19 (imagen: 19 JUN 10pm)
   { local: 'Japón',        visitante: 'Suecia',       fecha: '2026-06-25', hora: '17:00', grupo: 'F', fase: 'grupos' }, // 12am BST Jun 26 → 17:00 Jun 25
   { local: 'Túnez',        visitante: 'Países Bajos', fecha: '2026-06-25', hora: '17:00', grupo: 'F', fase: 'grupos' }, // 12am BST Jun 26 → 17:00 Jun 25
 
   // ── GRUPO G: Bélgica · Egipto · Irán · Nueva Zelanda ──
-  { local: 'Bélgica',      visitante: 'Egipto',        fecha: '2026-06-15', hora: '10:00', grupo: 'G', fase: 'grupos' }, // 5pm BST Jun 15
+  { local: 'Bélgica',      visitante: 'Egipto',        fecha: '2026-06-15', hora: '13:00', grupo: 'G', fase: 'grupos' }, // 1pm GT Jun 15
   { local: 'Irán',         visitante: 'Nueva Zelanda', fecha: '2026-06-15', hora: '19:00', grupo: 'G', fase: 'grupos' }, // 2am BST Jun 16 → 19:00 Jun 15
   { local: 'Bélgica',      visitante: 'Irán',          fecha: '2026-06-21', hora: '13:00', grupo: 'G', fase: 'grupos' }, // 8pm BST Jun 21
   { local: 'Nueva Zelanda', visitante: 'Egipto',       fecha: '2026-06-21', hora: '19:00', grupo: 'G', fase: 'grupos' }, // 2am BST Jun 22 → 19:00 Jun 21
@@ -71,7 +71,7 @@ const FIXTURE_2026 = [
   { local: 'Francia',  visitante: 'Senegal', fecha: '2026-06-16', hora: '13:00', grupo: 'I', fase: 'grupos' }, // 8pm BST Jun 16
   { local: 'Irak',     visitante: 'Noruega', fecha: '2026-06-16', hora: '16:00', grupo: 'I', fase: 'grupos' }, // 11pm BST Jun 16
   { local: 'Francia',  visitante: 'Irak',    fecha: '2026-06-22', hora: '15:00', grupo: 'I', fase: 'grupos' }, // 10pm BST Jun 22
-  { local: 'Noruega',  visitante: 'Senegal', fecha: '2026-06-22', hora: '18:00', grupo: 'I', fase: 'grupos' }, // 1am BST Jun 23 → 18:00 Jun 22
+  { local: 'Noruega',  visitante: 'Senegal', fecha: '2026-06-22', hora: '21:00', grupo: 'I', fase: 'grupos' }, // 9pm GT Jun 22
   { local: 'Noruega',  visitante: 'Francia', fecha: '2026-06-26', hora: '13:00', grupo: 'I', fase: 'grupos' }, // 8pm BST Jun 26
   { local: 'Senegal',  visitante: 'Irak',    fecha: '2026-06-26', hora: '13:00', grupo: 'I', fase: 'grupos' }, // 8pm BST Jun 26
 
