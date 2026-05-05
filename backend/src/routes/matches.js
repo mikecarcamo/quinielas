@@ -65,25 +65,4 @@ router.delete('/:id', verifyToken, requireAdmin, (req, res) => {
   res.json({ message: 'Partido eliminado' });
 });
 
-// ENDPOINT TEMPORAL DE LIMPIEZA - ELIMINAR DESPUÉS DE USAR
-router.post('/admin-cleanup', verifyToken, requireAdmin, (req, res) => {
-  const { secret } = req.body;
-  if (secret !== 'cleanup2026') return res.status(403).json({ error: 'No autorizado' });
-
-  const r1 = db.prepare("UPDATE matches SET goles_local_real = NULL, goles_visitante_real = NULL, status = 'pendiente', resultado_editado = 0").run();
-
-  const jose = db.prepare("SELECT id FROM users WHERE email = 'josemiguelcarcamo2007@gmail.com'").get();
-  let r2 = { changes: 0 };
-  if (jose) {
-    r2 = db.prepare('DELETE FROM predictions WHERE user_id = ?').run(jose.id);
-  }
-
-  res.json({
-    message: 'Limpieza completada',
-    partidos_reseteados: r1.changes,
-    predicciones_eliminadas: r2.changes,
-    usuario: jose ? jose.id : 'no encontrado',
-  });
-});
-
 module.exports = router;
