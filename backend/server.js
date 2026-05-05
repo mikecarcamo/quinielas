@@ -209,6 +209,12 @@ app.use((err, req, res, next) => {
 
 app.listen(PORT, () => {
   console.log(`Quiniela Backend corriendo en puerto ${PORT}`);
+
+  // Iniciar sincronización en vivo con football-data.org (solo si hay API key)
+  const { startFootballDataSync } = require('./src/lib/footballDataSync');
+  const db = require('./src/db/database');
+  const { recalculateMatchPoints } = require('./src/lib/scoring');
+  startFootballDataSync(db, recalculateMatchPoints);
 });
 
 module.exports = app;
