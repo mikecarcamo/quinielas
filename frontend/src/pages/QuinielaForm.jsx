@@ -79,33 +79,26 @@ function MatchPredictionRow({ match, value, onChange, disabled }) {
   );
 }
 
-function GroupSection({ grupo, matches, predictions, onChange, disabled }) {
+function DaySection({ fecha, matches, predictions, onChange, disabled, index }) {
   const filled = matches.filter((m) => isPredFilled(predictions[m.id])).length;
   const total = matches.length;
   const complete = filled === total;
-  const sorted = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha));
 
-  const teams = [...new Set(matches.flatMap((m) => [m.local, m.visitante]))];
+  const fechaLabel = formatDate(fecha, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
   return (
-    <Accordion defaultExpanded={grupo <= 'C'} disableGutters
+    <Accordion defaultExpanded={index < 3} disableGutters
       sx={{ mb: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: complete ? 'primary.dark' : 'divider', borderRadius: '12px !important', '&:before': { display: 'none' } }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 1 }}>
-          <Typography variant="subtitle1" fontWeight={700} sx={{ minWidth: 80 }}>
-            Grupo {grupo}
+          <Typography variant="subtitle1" fontWeight={700} sx={{ textTransform: 'capitalize' }}>
+            {fechaLabel}
           </Typography>
-          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap', flex: 1 }}>
-            {teams.map((t) => (
-              <Chip key={t} label={<Box sx={{ display:'flex', alignItems:'center', gap:0.5 }}><FlagImg country={t} size={14} />{t}</Box>}
-                size="small" variant="outlined" sx={{ fontSize: 11, height: 22 }} />
-            ))}
-          </Box>
           <Chip
             label={`${filled}/${total}`}
             size="small"
             color={complete ? 'success' : filled > 0 ? 'warning' : 'default'}
-            sx={{ flexShrink: 0 }}
+            sx={{ flexShrink: 0, ml: 'auto' }}
           />
         </Box>
       </AccordionSummary>
@@ -117,7 +110,7 @@ function GroupSection({ grupo, matches, predictions, onChange, disabled }) {
             color={filled > 0 ? 'warning' : 'inherit'}
           />
         )}
-        {sorted.map((match) => (
+        {matches.map((match) => (
           <MatchPredictionRow
             key={match.id} match={match}
             value={predictions[match.id]}
@@ -173,7 +166,8 @@ export default function QuinielaForm() {
     }));
   }, []);
 
-  const grupos = [...new Set(matches.map((m) => m.grupo))].filter(Boolean).sort();
+  const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || a.id - b.id);
+  const days = [...new Set(sortedMatches.map((m) => m.fecha))].sort();
   const openMatches = matches.filter((m) => !isPastDeadline(m.fecha));
   const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id])).length;
 
@@ -257,10 +251,10 @@ export default function QuinielaForm() {
       {success && <Alert severity="success" icon={<CheckCircleIcon />} sx={{ mb: 2 }}>{success}</Alert>}
 
       <Box sx={{ mb: 3 }}>
-        {grupos.map((g) => (
-          <GroupSection
-            key={g} grupo={g}
-            matches={matches.filter((m) => m.grupo === g)}
+        {days.map((fecha, i) => (
+          <DaySection
+            key={fecha} fecha={fecha} index={i}
+            matches={sortedMatches.filter((m) => m.fecha === fecha)}
             predictions={predictions}
             onChange={handleChange}
             disabled={!canPredict}
