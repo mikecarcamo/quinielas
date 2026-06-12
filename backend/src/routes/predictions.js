@@ -16,9 +16,9 @@ function isMatchClosed(match) {
   const [hours, minutes] = (match.hora || '00:00').split(':').map(Number);
   const matchDate = new Date(year, month - 1, day, hours, minutes);
 
-  // El partido está cerrado si faltan menos de 60 minutos
+  // El partido está cerrado si faltan menos de 120 minutos
   const diffMs = matchDate.getTime() - now.getTime();
-  return diffMs < 60 * 60 * 1000; // menos de 1 hora = cerrado
+  return diffMs < 2 * 60 * 60 * 1000; // menos de 2 horas = cerrado
 }
 
 function userCanPredict(userId, eventId) {
