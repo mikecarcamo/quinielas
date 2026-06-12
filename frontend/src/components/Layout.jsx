@@ -13,6 +13,7 @@ import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import PaymentIcon from '@mui/icons-material/Payment';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import GroupIcon from '@mui/icons-material/Group';
 import ReceiptIcon from '@mui/icons-material/Receipt';
@@ -35,6 +36,7 @@ export default function Layout() {
     { text: 'Ver Pronósticos', icon: <FormatListNumberedIcon />, path: '/mi-quiniela' },
     { text: 'Ranking', icon: <EmojiEventsIcon />, path: '/ranking' },
     { text: 'Mi Pago', icon: <PaymentIcon />, path: '/pago' },
+    { text: 'Mi Perfil', icon: <ManageAccountsIcon />, path: '/perfil' },
   ];
 
   const adminNav = [

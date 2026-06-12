@@ -17,6 +17,7 @@ import AdminMatches from './pages/admin/AdminMatches';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminPayments from './pages/admin/AdminPayments';
 import AdminQuinielaView from './pages/admin/AdminQuinielaView';
+import MiPerfil from './pages/MiPerfil';
 import AdminEvents from './pages/admin/AdminEvents';
 import QuinielaView from './pages/QuinielaView';
 
@@ -48,6 +49,7 @@ function AppRoutes() {
         <Route path="admin/quiniela/:userId" element={<PrivateRoute adminOnly><AdminQuinielaView /></PrivateRoute>} />
         <Route path="admin/eventos" element={<PrivateRoute adminOnly><AdminEvents /></PrivateRoute>} />
         <Route path="quiniela-ver/:userId" element={<PrivateRoute><QuinielaView /></PrivateRoute>} />
+        <Route path="perfil" element={<PrivateRoute><MiPerfil /></PrivateRoute>} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

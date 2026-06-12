@@ -77,4 +77,41 @@ router.patch('/users/:id/activate', verifyToken, (req, res) => {
   res.json({ message: 'Estado actualizado' });
 });
 
+// Cambio de contraseña por el propio usuario
+router.put('/change-password', verifyToken, (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!current_password || !new_password) {
+    return res.status(400).json({ error: 'Contraseña actual y nueva son requeridas' });
+  }
+  if (new_password.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+  }
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+  const valid = bcrypt.compareSync(current_password, user.password);
+  if (!valid) return res.status(401).json({ error: 'La contraseña actual es incorrecta' });
+
+  const hash = bcrypt.hashSync(new_password, 10);
+  db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hash, req.user.id);
+  res.json({ message: 'Contraseña actualizada correctamente' });
+});
+
+// Reset de contraseña por admin
+router.patch('/users/:id/reset-password', verifyToken, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Sin acceso' });
+  const { new_password } = req.body;
+  if (!new_password || new_password.length < 6) {
+    return res.status(400).json({ error: 'La nueva contraseña debe tener al menos 6 caracteres' });
+  }
+
+  const user = db.prepare('SELECT id, email FROM users WHERE id = ?').get(req.params.id);
+  if (!user) return res.status(404).json({ error: 'Usuario no encontrado' });
+
+  const hash = bcrypt.hashSync(new_password, 10);
+  db.prepare('UPDATE users SET password = ? WHERE id = ?').run(hash, req.params.id);
+  res.json({ message: `Contraseña de ${user.email} restablecida correctamente` });
+});
+
 module.exports = router;
