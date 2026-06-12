@@ -27,12 +27,13 @@ lines.push(``);
 lines.push(`const insertUser = db.prepare(\`INSERT OR IGNORE INTO users (nombre_completo, email, password, role, is_active) VALUES (?, ?, ?, 'user', 1)\`);`);
 lines.push(`const insertPayment = db.prepare(\`INSERT OR IGNORE INTO payments (user_id, event_id, comprobante_url, status) VALUES (?, ?, 'recuperado_pdf', 'aprobado')\`);`);
 lines.push(`const insertPred = db.prepare(\`INSERT OR IGNORE INTO predictions (user_id, match_id, goles_local_pred, goles_visitante_pred, puntos_obtenidos) VALUES (?, ?, ?, ?, 0)\`);`);
+lines.push(`const findMatch = db.prepare(\`SELECT id FROM matches WHERE event_id = ? AND local = ? AND visitante = ? LIMIT 1\`);`);
 lines.push(``);
 lines.push(`const USUARIOS = [`);
 
 for (const user of users) {
   const preds = db.prepare(`
-    SELECT p.match_id, p.goles_local_pred, p.goles_visitante_pred,
+    SELECT p.goles_local_pred, p.goles_visitante_pred,
            m.local, m.visitante
     FROM predictions p
     JOIN matches m ON m.id = p.match_id
@@ -45,7 +46,7 @@ for (const user of users) {
   lines.push(`    email: ${JSON.stringify(user.email)},`);
   lines.push(`    preds: [`);
   for (const p of preds) {
-    lines.push(`      { match_id: ${p.match_id}, gl: ${p.goles_local_pred}, gv: ${p.goles_visitante_pred} }, // ${p.local} vs ${p.visitante}`);
+    lines.push(`      { local: ${JSON.stringify(p.local)}, visitante: ${JSON.stringify(p.visitante)}, gl: ${p.goles_local_pred}, gv: ${p.goles_visitante_pred} },`);
   }
   lines.push(`    ]`);
   lines.push(`  },`);
@@ -53,7 +54,7 @@ for (const user of users) {
 
 lines.push(`];`);
 lines.push(``);
-lines.push(`let stats = { usuarios: 0, pagos: 0, preds: 0 };`);
+lines.push(`let stats = { usuarios: 0, pagos: 0, preds: 0, noMatch: 0 };`);
 lines.push(`db.transaction(() => {`);
 lines.push(`  for (const u of USUARIOS) {`);
 lines.push(`    insertUser.run(u.nombre, u.email, PASSWORD_HASH);`);
@@ -63,7 +64,9 @@ lines.push(`    stats.usuarios++;`);
 lines.push(`    insertPayment.run(user.id, EVENT_ID);`);
 lines.push(`    stats.pagos++;`);
 lines.push(`    for (const p of u.preds) {`);
-lines.push(`      insertPred.run(user.id, p.match_id, p.gl, p.gv);`);
+lines.push(`      const match = findMatch.get(EVENT_ID, p.local, p.visitante);`);
+lines.push(`      if (!match) { console.warn('Partido no encontrado:', p.local, 'vs', p.visitante); stats.noMatch++; continue; }`);
+lines.push(`      insertPred.run(user.id, match.id, p.gl, p.gv);`);
 lines.push(`      stats.preds++;`);
 lines.push(`    }`);
 lines.push(`  }`);
