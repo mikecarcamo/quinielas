@@ -62,6 +62,27 @@ const NAME_MAP = {
   'Canada':                 'Canadá',
   'Mexico':                 'México',
   'South Africa':           'Sudáfrica',
+  'Brazil':                 'Brasil',
+  'Haiti':                  'Haití',
+  'Sweden':                 'Suecia',
+  'Spain':                  'España',
+  'Cape Verde':             'Cabo Verde',
+  'Cabo Verde':             'Cabo Verde',
+  'Iraq':                   'Irak',
+  'France':                 'Francia',
+  'Congo DR':               'Congo',
+  'DR Congo':               'Congo',
+  'Democratic Republic of Congo': 'Congo',
+  'England':                'Inglaterra',
+  'Croatia':                'Croacia',
+  'Panama':                 'Panamá',
+  'Jordan':                 'Jordania',
+  'Iran':                   'Irán',
+  'Ivory Coast':            'Costa de Marfil',
+  'Greece':                 'Grecia',
+  'Poland':                 'Polonia',
+  'Denmark':                'Dinamarca',
+  'Wales':                  'Gales',
 };
 
 function normalize(name) {
@@ -165,7 +186,7 @@ async function syncMatches(db, recalculateMatchPoints) {
   if (synced > 0) console.log(`[FIFA-SYNC] ${synced} partido(s) actualizados`);
 
   // Devolver el intervalo adecuado
-  if (hasLive)  return { interval: 2  * 60 * 1000 }; // 2 min si hay partido en curso
+  if (hasLive)  return { interval: 1  * 60 * 1000 }; // 1 min si hay partido en curso
   if (hasToday) return { interval: 5  * 60 * 1000 }; // 5 min si hay partido hoy
   return        { interval: 60 * 60 * 1000 };         // 60 min si no hay nada hoy
 }
