@@ -23,7 +23,7 @@ function isPredFilled(p) {
 function MatchPredictionRow({ match, value, onChange, disabled }) {
   const hora = match.hora || '—';
   const filled = isPredFilled(value);
-  const closed = isPastDeadline(match.fecha);
+  const closed = isPastDeadline(match.fecha, match.hora);
   const finalizado = match.status === 'finalizado';
   const isLocked = disabled || closed || finalizado;
 
@@ -181,7 +181,7 @@ export default function QuinielaForm() {
 
   const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || a.id - b.id);
   const days = [...new Set(sortedMatches.map((m) => m.fecha))].sort();
-  const openMatches = matches.filter((m) => !isPastDeadline(m.fecha));
+  const openMatches = matches.filter((m) => !isPastDeadline(m.fecha, m.hora));
   const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id])).length;
 
   const handleSubmit = async () => {

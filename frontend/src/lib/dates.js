@@ -19,13 +19,16 @@ export function formatDateTime(fecha, options = { day: '2-digit', month: 'short'
 }
 
 /**
- * Devuelve true si la fecha del partido ya pasó el deadline (menos de 1 día de anticipación).
+ * Devuelve true si el partido ya cerró (faltan menos de 2 horas para el inicio).
  * El cálculo se hace en GMT-6 (Guatemala).
+ * @param {string} fecha - formato YYYY-MM-DD
+ * @param {string} hora  - formato HH:MM (opcional, default '00:00')
  */
-export function isPastDeadline(fecha) {
+export function isPastDeadline(fecha, hora = '00:00') {
   const now = new Date(new Date().toLocaleString('en-US', { timeZone: TZ }));
-  now.setHours(0, 0, 0, 0);
-  const deadline = new Date(now);
-  deadline.setDate(deadline.getDate() + 1);
-  return new Date(fecha + 'T00:00:00') < deadline;
+  const [year, month, day] = fecha.split('-').map(Number);
+  const [hours, minutes] = (hora || '00:00').split(':').map(Number);
+  const matchDate = new Date(year, month - 1, day, hours, minutes);
+  const diffMs = matchDate.getTime() - now.getTime();
+  return diffMs < 2 * 60 * 60 * 1000; // menos de 2 horas = cerrado
 }
