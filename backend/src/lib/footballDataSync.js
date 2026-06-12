@@ -21,6 +21,7 @@ const NAME_MAP = {
   'USA':                    'Estados Unidos',
   'United States':          'Estados Unidos',
   'Korea Republic':         'Corea del Sur',
+  'South Korea':            'Corea del Sur',
   'IR Iran':                'Irán',
   'Côte d\'Ivoire':         'Costa de Marfil',
   'Bosnia and Herzegovina': 'Bosnia y Herzegovina',
@@ -110,8 +111,10 @@ async function syncMatches(db, recalculateMatchPoints) {
   let synced = 0;
 
   for (const am of apiMatches) {
-    const homeTeam = normalize(am.homeTeam?.name || '');
-    const awayTeam = normalize(am.awayTeam?.name || '');
+    const homeRaw = am.homeTeam?.name || am.homeTeam?.shortName || '';
+    const awayRaw = am.awayTeam?.name || am.awayTeam?.shortName || '';
+    const homeTeam = normalize(homeRaw);
+    const awayTeam = normalize(awayRaw);
     const apiStatus = am.status; // SCHEDULED, IN_PLAY, PAUSED, FINISHED, POSTPONED
 
     if (apiStatus === 'IN_PLAY' || apiStatus === 'PAUSED') hasLive = true;
@@ -134,7 +137,7 @@ async function syncMatches(db, recalculateMatchPoints) {
     ).get(awayTeam, homeTeam); // por si el orden está invertido
 
     if (!match) {
-      console.warn(`[FIFA-SYNC] Partido no encontrado en BD: ${homeTeam} vs ${awayTeam}`);
+      console.warn(`[FIFA-SYNC] Partido no encontrado en BD: "${homeTeam}" vs "${awayTeam}" (raw: "${homeRaw}" vs "${awayRaw}")`);
       continue;
     }
 
