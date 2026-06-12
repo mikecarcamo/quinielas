@@ -5,6 +5,22 @@ const { calculatePoints } = require('../lib/scoring');
 
 const router = express.Router();
 
+// Helper: verifica si el partido ya pasó el deadline (menos de 1h antes del inicio)
+// Usa GMT-6 (Guatemala) consistentemente con el frontend
+function isMatchClosed(match) {
+  // Obtener ahora en GMT-6
+  const now = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
+
+  // Parsear fecha y hora del partido en GMT-6
+  const [year, month, day] = match.fecha.split('-').map(Number);
+  const [hours, minutes] = (match.hora || '00:00').split(':').map(Number);
+  const matchDate = new Date(year, month - 1, day, hours, minutes);
+
+  // El partido está cerrado si faltan menos de 60 minutos
+  const diffMs = matchDate.getTime() - now.getTime();
+  return diffMs < 60 * 60 * 1000; // menos de 1 hora = cerrado
+}
+
 function userCanPredict(userId, eventId) {
   const payment = db.prepare(`
     SELECT id FROM payments WHERE user_id = ? AND event_id = ? AND status = 'aprobado'
@@ -49,14 +65,9 @@ router.post('/bulk', verifyToken, (req, res) => {
       if (!match) throw new Error(`Partido ${p.match_id} no válido`);
       if (match.status === 'finalizado') throw new Error(`Partido ${p.match_id} ya finalizó`);
 
-      // Validar que el partido sea al menos mañana
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const deadline = new Date(today);
-      deadline.setDate(deadline.getDate() + 1);
-      const matchDate = new Date(match.fecha + 'T00:00:00');
-      if (matchDate < deadline) {
-        throw new Error(`El partido ${match.local} vs ${match.visitante} ya no acepta predicciones.`);
+      // Validar que el partido no esté cerrado (más de 1h antes del inicio)
+      if (isMatchClosed(match)) {
+        throw new Error(`El partido ${match.local} vs ${match.visitante} ya cerró o está por iniciar.`);
       }
 
       if (p.goles_local_pred === undefined || p.goles_visitante_pred === undefined) {
@@ -108,10 +119,9 @@ router.put('/bulk', verifyToken, (req, res) => {
       if (!match) throw new Error(`Partido ${p.match_id} no válido`);
       if (match.status === 'finalizado') throw new Error(`El partido ${match.local} vs ${match.visitante} ya finalizó.`);
 
-      const today = new Date(); today.setHours(0, 0, 0, 0);
-      const deadline = new Date(today); deadline.setDate(deadline.getDate() + 1);
-      if (new Date(match.fecha + 'T00:00:00') < deadline) {
-        throw new Error(`El partido ${match.local} vs ${match.visitante} ya no acepta cambios.`);
+      // Validar que el partido no esté cerrado
+      if (isMatchClosed(match)) {
+        throw new Error(`El partido ${match.local} vs ${match.visitante} ya cerró o está por iniciar.`);
       }
 
       let pts = 0;
