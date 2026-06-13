@@ -25,11 +25,14 @@ function MatchPredictionRow({ match, value, onChange, disabled }) {
   const filled = isPredFilled(value);
   const closed = isPastDeadline(match.fecha, match.hora);
   const finalizado = match.status === 'finalizado';
-  const isLocked = disabled || closed || finalizado;
+  const enCurso = match.status === 'en_curso';
+  const isLocked = disabled || closed || finalizado || enCurso;
 
   let statusChip = null;
   if (finalizado) {
     statusChip = <Chip label="Finalizado" size="small" color="default" sx={{ fontSize: 10, height: 18, flexShrink: 0 }} />;
+  } else if (enCurso) {
+    statusChip = <Chip label="🔴 En curso" size="small" color="warning" sx={{ fontSize: 10, height: 18, flexShrink: 0 }} />;
   } else if (closed) {
     statusChip = <Chip label="Cerrado" size="small" color="error" sx={{ fontSize: 10, height: 18, flexShrink: 0 }} />;
   } else if (filled) {

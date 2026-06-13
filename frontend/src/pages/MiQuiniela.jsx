@@ -13,9 +13,12 @@ import EventSelector from '../components/EventSelector';
 import { formatDate } from '../lib/dates';
 
 function ResultChip({ p }) {
-  if (p.match_status !== 'finalizado') return <Chip label="Pendiente" size="small" />;
-  const pts = calcPoints(p);
-  return <Chip label={`+${pts} pts`} size="small" color={pts === 12 ? 'success' : pts >= 7 ? 'warning' : pts > 0 ? 'default' : 'error'} />;
+  if (p.match_status === 'finalizado') {
+    const pts = calcPoints(p);
+    return <Chip label={`+${pts} pts`} size="small" color={pts === 12 ? 'success' : pts >= 7 ? 'warning' : pts > 0 ? 'default' : 'error'} />;
+  }
+  if (p.match_status === 'en_curso') return <Chip label="🔴 En curso" size="small" color="warning" />;
+  return <Chip label="Pendiente" size="small" />;
 }
 
 function calcPoints(p) {
@@ -124,8 +127,8 @@ export default function MiQuiniela() {
                       </Typography>
                     </TableCell>
                     <TableCell align="center">
-                      {p.match_status === 'finalizado' ? (
-                        <Typography variant="body1" fontWeight={700}>
+                      {(p.match_status === 'finalizado' || p.match_status === 'en_curso') ? (
+                        <Typography variant="body1" fontWeight={700} sx={{ color: p.match_status === 'en_curso' ? 'warning.main' : 'inherit' }}>
                           {p.goles_local_real} – {p.goles_visitante_real}
                         </Typography>
                       ) : (
@@ -138,6 +141,8 @@ export default function MiQuiniela() {
                     <TableCell align="center">
                       {p.match_status === 'finalizado'
                         ? <CheckCircleIcon color="success" fontSize="small" />
+                        : p.match_status === 'en_curso'
+                        ? <RadioButtonUncheckedIcon color="warning" fontSize="small" />
                         : <RadioButtonUncheckedIcon color="disabled" fontSize="small" />}
                     </TableCell>
                   </TableRow>

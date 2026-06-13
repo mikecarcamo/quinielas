@@ -3,7 +3,7 @@ import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Chip, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Button, Alert, Tooltip, CircularProgress,
-  Accordion, AccordionSummary, AccordionDetails,
+  Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Checkbox,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -19,7 +19,7 @@ export default function AdminMatches() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState({ open: false, match: null });
-  const [form, setForm] = useState({ goles_local: '', goles_visitante: '' });
+  const [form, setForm] = useState({ goles_local: '', goles_visitante: '', finalizar: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -35,7 +35,11 @@ export default function AdminMatches() {
   useEffect(() => { load(); }, [selectedEventId]);
 
   const openDialog = (match) => {
-    setForm({ goles_local: match.goles_local_real ?? '', goles_visitante: match.goles_visitante_real ?? '' });
+    setForm({
+      goles_local: match.goles_local_real ?? '',
+      goles_visitante: match.goles_visitante_real ?? '',
+      finalizar: match.status !== 'en_curso',
+    });
     setDialog({ open: true, match });
     setError('');
   };
@@ -44,11 +48,13 @@ export default function AdminMatches() {
     if (form.goles_local === '' || form.goles_visitante === '') return setError('Ingresa ambos marcadores');
     setSaving(true);
     try {
+      const esEnCurso = dialog.match.status === 'en_curso';
       await api.patch(`/matches/${dialog.match.id}/result`, {
         goles_local_real: Number(form.goles_local),
         goles_visitante_real: Number(form.goles_visitante),
+        ...(esEnCurso && { finalizar: form.finalizar }),
       });
-      setSuccess('Resultado guardado y puntos recalculados.');
+      setSuccess(form.finalizar ? 'Resultado guardado y puntos recalculados.' : 'Marcador parcial actualizado.');
       setDialog({ open: false, match: null });
       load();
     } catch (err) {
@@ -74,10 +80,11 @@ export default function AdminMatches() {
       {days.map((fecha, idx) => {
         const dayMatches = sortedMatches.filter(m => m.fecha === fecha);
         const finalizados = dayMatches.filter(m => m.status === 'finalizado').length;
+        const enCurso = dayMatches.filter(m => m.status === 'en_curso').length;
         const fechaLabel = formatDate(fecha, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
         return (
           <Accordion key={fecha} defaultExpanded={idx < 3} disableGutters
-            sx={{ mb: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: finalizados === dayMatches.length ? 'success.dark' : 'divider', borderRadius: '12px !important', '&:before': { display: 'none' } }}>
+            sx={{ mb: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: enCurso > 0 ? 'warning.main' : finalizados === dayMatches.length ? 'success.dark' : 'divider', borderRadius: '12px !important', '&:before': { display: 'none' } }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 1 }}>
                 <Typography variant="subtitle1" fontWeight={700} sx={{ textTransform: 'capitalize' }}>{fechaLabel}</Typography>
@@ -90,8 +97,8 @@ export default function AdminMatches() {
               {dayMatches.map((m) => (
                 <Box key={m.id} sx={{
                   py: 1, px: 1.5, borderRadius: 2, mb: 0.5,
-                  bgcolor: m.status === 'finalizado' ? 'rgba(255,255,255,0.02)' : 'background.default',
-                  border: '1px solid', borderColor: m.status === 'finalizado' ? 'success.dark' : 'divider',
+                  bgcolor: m.status === 'finalizado' ? 'rgba(255,255,255,0.02)' : m.status === 'en_curso' ? 'rgba(255,152,0,0.06)' : 'background.default',
+                  border: '1px solid', borderColor: m.status === 'finalizado' ? 'success.dark' : m.status === 'en_curso' ? 'warning.main' : 'divider',
                 }}>
                   {/* Fila superior: hora + grupo + estado */}
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
@@ -99,7 +106,12 @@ export default function AdminMatches() {
                       {m.hora || '—'} · Grupo {m.grupo}
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 0.5, alignItems: 'center' }}>
-                      <Chip label={m.status} size="small" color={m.status === 'finalizado' ? 'success' : 'default'} sx={{ fontSize: 10, height: 18 }} />
+                      <Chip
+                        label={m.status === 'finalizado' ? 'Finalizado' : m.status === 'en_curso' ? '🔴 En curso' : m.status}
+                        size="small"
+                        color={m.status === 'finalizado' ? 'success' : m.status === 'en_curso' ? 'warning' : 'default'}
+                        sx={{ fontSize: 10, height: 18 }}
+                      />
                     </Box>
                   </Box>
                   {/* Fila principal: local — resultado — visitante — acción */}
@@ -109,8 +121,8 @@ export default function AdminMatches() {
                       <FlagImg country={m.local} size={18} />
                     </Box>
                     <Box sx={{ flexShrink: 0, px: { xs: 0.5, sm: 1 }, textAlign: 'center', minWidth: 48 }}>
-                      {m.status === 'finalizado' ? (
-                        <Typography fontWeight={700} sx={{ fontSize: { xs: 13, sm: 15 } }}>
+                      {(m.status === 'finalizado' || m.status === 'en_curso') ? (
+                        <Typography fontWeight={700} sx={{ fontSize: { xs: 13, sm: 15 }, color: m.status === 'en_curso' ? 'warning.main' : 'inherit' }}>
                           {m.goles_local_real} – {m.goles_visitante_real}
                           {!!m.resultado_editado && <Typography component="span" color="warning.main" fontWeight={700}> *</Typography>}
                         </Typography>
@@ -137,13 +149,18 @@ export default function AdminMatches() {
 
       <Dialog open={dialog.open} onClose={() => setDialog({ open: false, match: null })} maxWidth="xs" fullWidth>
         <DialogTitle>
-          {dialog.match?.status === 'finalizado' ? 'Corregir resultado' : 'Cargar resultado'} — {dialog.match?.local} vs {dialog.match?.visitante}
+          {dialog.match?.status === 'finalizado' ? 'Corregir resultado' : dialog.match?.status === 'en_curso' ? '🔴 Partido en curso' : 'Cargar resultado'} — {dialog.match?.local} vs {dialog.match?.visitante}
         </DialogTitle>
         <DialogContent>
           {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
           {dialog.match?.status === 'finalizado' && (
             <Alert severity="warning" icon={<WarningAmberIcon />} sx={{ mb: 2 }}>
               Este partido ya tiene resultado. Al guardar se recalcularán los puntos de todos los participantes.
+            </Alert>
+          )}
+          {dialog.match?.status === 'en_curso' && (
+            <Alert severity="info" sx={{ mb: 2 }}>
+              El partido está en curso. Puedes corregir el marcador parcial o marcarlo como finalizado.
             </Alert>
           )}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 1 }}>
@@ -153,11 +170,25 @@ export default function AdminMatches() {
             <TextField label={dialog.match?.visitante} type="number" inputProps={{ min: 0 }}
               value={form.goles_visitante} onChange={(e) => setForm({ ...form, goles_visitante: e.target.value })} fullWidth />
           </Box>
+          {dialog.match?.status === 'en_curso' && (
+            <FormControlLabel
+              sx={{ mt: 2 }}
+              control={
+                <Checkbox
+                  checked={form.finalizar}
+                  onChange={(e) => setForm({ ...form, finalizar: e.target.checked })}
+                  color="success"
+                />
+              }
+              label="Marcar partido como finalizado (recalcula puntos)"
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialog({ open: false, match: null })}>Cancelar</Button>
-          <Button variant="contained" onClick={handleSave} disabled={saving}>
-            {saving ? 'Guardando...' : 'Guardar resultado'}
+          <Button variant="contained" onClick={handleSave} disabled={saving}
+            color={dialog.match?.status === 'en_curso' && !form.finalizar ? 'warning' : 'primary'}>
+            {saving ? 'Guardando...' : dialog.match?.status === 'en_curso' && !form.finalizar ? 'Actualizar marcador parcial' : 'Guardar resultado'}
           </Button>
         </DialogActions>
       </Dialog>

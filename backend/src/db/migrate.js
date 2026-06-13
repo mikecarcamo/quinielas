@@ -47,7 +47,7 @@ db.exec(`
     hora TEXT,
     goles_local_real INTEGER,
     goles_visitante_real INTEGER,
-    status TEXT NOT NULL DEFAULT 'pendiente' CHECK(status IN ('pendiente','finalizado')),
+    status TEXT NOT NULL DEFAULT 'pendiente' CHECK(status IN ('pendiente','en_curso','finalizado')),
     resultado_editado INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     FOREIGN KEY (event_id) REFERENCES events(id)

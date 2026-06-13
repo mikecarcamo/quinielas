@@ -7,6 +7,42 @@ try {
   console.error('Error en migración:', e.message);
 }
 
+// Migración incremental: status 'en_curso' — recrear matches sin CHECK restrictivo si necesario
+try {
+  const db = require('./src/db/database');
+  const createSql = db.prepare("SELECT sql FROM sqlite_master WHERE type='table' AND name='matches'").get()?.sql || '';
+  if (createSql.includes("CHECK(status IN ('pendiente','finalizado'))") || createSql.includes("CHECK(status IN ('pendiente', 'finalizado'))")) {
+    db.exec(`
+      PRAGMA foreign_keys = OFF;
+      BEGIN;
+      CREATE TABLE matches_new (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        event_id INTEGER NOT NULL,
+        local TEXT NOT NULL,
+        visitante TEXT NOT NULL,
+        fecha TEXT NOT NULL,
+        grupo TEXT,
+        fase TEXT NOT NULL DEFAULT 'grupos',
+        hora TEXT,
+        goles_local_real INTEGER,
+        goles_visitante_real INTEGER,
+        status TEXT NOT NULL DEFAULT 'pendiente' CHECK(status IN ('pendiente','en_curso','finalizado')),
+        resultado_editado INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        FOREIGN KEY (event_id) REFERENCES events(id)
+      );
+      INSERT INTO matches_new SELECT id,event_id,local,visitante,fecha,grupo,fase,hora,goles_local_real,goles_visitante_real,status,resultado_editado,created_at FROM matches;
+      DROP TABLE matches;
+      ALTER TABLE matches_new RENAME TO matches;
+      COMMIT;
+      PRAGMA foreign_keys = ON;
+    `);
+    console.log('Migración: matches.status CHECK constraint actualizado con en_curso');
+  }
+} catch (e) {
+  console.error('Error en migración status en_curso:', e.message);
+}
+
 // Migración incremental: agregar columna hora si no existe, y siempre sincronizar horas del fixture
 try {
   const db = require('./src/db/database');

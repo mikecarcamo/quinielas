@@ -162,10 +162,10 @@ async function syncMatches(db, recalculateMatchPoints) {
       continue;
     }
 
-    // No sobreescribir si el admin editó manualmente (resultado_editado = 1)
-    if (match.resultado_editado) continue;
+    // Nunca sobreescribir un partido ya finalizado (admin lo cerró manualmente)
+    if (match.status === 'finalizado') continue;
 
-    const nuevoStatus = apiStatus === 'FINISHED' ? 'finalizado' : 'pendiente';
+    const nuevoStatus = apiStatus === 'FINISHED' ? 'finalizado' : (apiStatus === 'IN_PLAY' || apiStatus === 'PAUSED') ? 'en_curso' : 'pendiente';
     const cambioMarcador = match.goles_local_real !== scoreHome || match.goles_visitante_real !== scoreAway;
     const cambioStatus   = match.status !== nuevoStatus;
 

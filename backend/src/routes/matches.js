@@ -39,22 +39,29 @@ router.post('/', verifyToken, requireAdmin, (req, res) => {
 });
 
 router.patch('/:id/result', verifyToken, requireAdmin, (req, res) => {
-  const { goles_local_real, goles_visitante_real } = req.body;
+  const { goles_local_real, goles_visitante_real, finalizar } = req.body;
   if (goles_local_real === undefined || goles_visitante_real === undefined) {
     return res.status(400).json({ error: 'Goles local y visitante requeridos' });
   }
 
-  const existing = db.prepare('SELECT status, resultado_editado FROM matches WHERE id = ?').get(req.params.id);
-  const esCorreccion = existing && existing.status === 'finalizado' ? 1 : 0;
+  const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
+  if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
+
+  // finalizar=false → solo actualiza marcador parcial (en_curso), no recalcula puntos
+  // finalizar=true o partido no en_curso → finaliza y recalcula puntos
+  const debeFinalizarse = finalizar !== false || match.status !== 'en_curso';
+  const nuevoStatus = debeFinalizarse ? 'finalizado' : 'en_curso';
 
   db.prepare(`
     UPDATE matches
-    SET goles_local_real = ?, goles_visitante_real = ?, status = 'finalizado',
+    SET goles_local_real = ?, goles_visitante_real = ?, status = ?,
         resultado_editado = ?
     WHERE id = ?
-  `).run(goles_local_real, goles_visitante_real, esCorreccion, req.params.id);
+  `).run(goles_local_real, goles_visitante_real, nuevoStatus, debeFinalizarse ? 1 : 0, req.params.id);
 
-  recalculateMatchPoints(db, Number(req.params.id));
+  if (debeFinalizarse) {
+    recalculateMatchPoints(db, Number(req.params.id));
+  }
 
   const updated = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
   res.json(updated);
