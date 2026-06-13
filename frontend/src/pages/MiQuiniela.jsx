@@ -17,7 +17,10 @@ function ResultChip({ p }) {
     const pts = calcPoints(p);
     return <Chip label={`+${pts} pts`} size="small" color={pts === 12 ? 'success' : pts >= 7 ? 'warning' : pts > 0 ? 'default' : 'error'} />;
   }
-  if (p.match_status === 'en_curso') return <Chip label="🔴 En curso" size="small" color="warning" />;
+  if (p.match_status === 'en_curso') {
+    const pts = calcPoints(p);
+    return <Chip label={pts > 0 ? `🔴 +${pts} pts` : '🔴 En curso'} size="small" color="warning" />;
+  }
   return <Chip label="Pendiente" size="small" />;
 }
 
@@ -59,7 +62,12 @@ export default function MiQuiniela() {
     );
   }
 
-  const totalPuntos = preds.reduce((a, p) => a + p.puntos_obtenidos, 0);
+  const totalPuntos = preds.reduce((a, p) => {
+    if (p.match_status === 'finalizado') return a + p.puntos_obtenidos;
+    if (p.match_status === 'en_curso') return a + (calcPoints(p) ?? 0);
+    return a;
+  }, 0);
+  const enCursoCount = preds.filter((p) => p.match_status === 'en_curso').length;
   const finalizados = preds.filter((p) => p.match_status === 'finalizado').length;
   const maxPosible = preds.length * 12;
 

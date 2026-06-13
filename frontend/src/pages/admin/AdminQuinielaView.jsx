@@ -28,10 +28,11 @@ function calcPoints(p) {
 }
 
 function PointsChip({ p }) {
-  if (p.match_status !== 'finalizado') {
-    return <Chip label="Pendiente" size="small" variant="outlined" />;
-  }
+  if (p.match_status === 'pendiente') return <Chip label="Pendiente" size="small" variant="outlined" />;
   const pts = calcPoints(p);
+  if (p.match_status === 'en_curso') {
+    return <Chip label={pts > 0 ? `🔴 +${pts} pts` : '🔴 En curso'} size="small" color="warning" />;
+  }
   const color = pts === 12 ? 'success' : pts >= 7 ? 'warning' : pts > 0 ? 'default' : 'error';
   return <Chip label={`+${pts} pts`} size="small" color={color} />;
 }
@@ -61,10 +62,11 @@ export default function AdminQuinielaView() {
 
   const groups = [...new Set(preds.map((p) => p.grupo))].sort();
   const totalPts = preds.reduce((s, p) => {
-    if (p.match_status !== 'finalizado') return s;
+    if (p.match_status !== 'finalizado' && p.match_status !== 'en_curso') return s;
     return s + (calcPoints(p) ?? 0);
   }, 0);
   const played = preds.filter((p) => p.match_status === 'finalizado').length;
+  const enCursoCount = preds.filter((p) => p.match_status === 'en_curso').length;
 
   const exportPDF = async () => {
     const { default: jsPDF } = await import('jspdf');
@@ -174,8 +176,8 @@ export default function AdminQuinielaView() {
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
         <Typography variant="h5" fontWeight={700}>Quiniela de {userName}</Typography>
         <Chip label={`${preds.length} / 72 pronósticos`} color={preds.length === 72 ? 'success' : 'warning'} />
-        {played > 0 && (
-          <Chip label={`${totalPts} pts acumulados`} color="primary" variant="outlined" />
+        {(played > 0 || enCursoCount > 0) && (
+          <Chip label={`${totalPts} pts acumulados${enCursoCount > 0 ? ' (en curso)' : ''}`} color={enCursoCount > 0 ? 'warning' : 'primary'} variant="outlined" />
         )}
         <Box sx={{ ml: 'auto' }}>
           <Button
@@ -196,7 +198,8 @@ export default function AdminQuinielaView() {
         groups.map((grupo) => {
           const gPreds = preds.filter((p) => p.grupo === grupo);
           const finalizados = gPreds.filter((p) => p.match_status === 'finalizado');
-          const gpPts = finalizados.reduce((s, p) => s + (calcPoints(p) ?? 0), 0);
+          const enCursoGrupo = gPreds.filter((p) => p.match_status === 'en_curso');
+          const gpPts = [...finalizados, ...enCursoGrupo].reduce((s, p) => s + (calcPoints(p) ?? 0), 0);
 
           return (
             <Accordion key={grupo} defaultExpanded disableGutters
@@ -206,13 +209,13 @@ export default function AdminQuinielaView() {
                   <Typography variant="subtitle1" fontWeight={700} sx={{ minWidth: 80 }}>
                     Grupo {grupo}
                   </Typography>
-                  {finalizados.length > 0 && (
-                    <Chip label={`${gpPts} pts`} size="small" color="primary" variant="outlined" />
+                  {(finalizados.length > 0 || enCursoGrupo.length > 0) && (
+                    <Chip label={`${gpPts} pts`} size="small" color={enCursoGrupo.length > 0 ? 'warning' : 'primary'} variant="outlined" />
                   )}
                   <Chip
                     label={`${finalizados.length}/${gPreds.length} jugados`}
                     size="small"
-                    color={finalizados.length === gPreds.length ? 'success' : 'default'}
+                    color={finalizados.length === gPreds.length ? 'success' : enCursoGrupo.length > 0 ? 'warning' : 'default'}
                   />
                 </Box>
               </AccordionSummary>
@@ -232,9 +235,10 @@ export default function AdminQuinielaView() {
                     <TableBody>
                       {gPreds.map((p) => {
                         const finalizado = p.match_status === 'finalizado';
+                        const enCurso = p.match_status === 'en_curso';
                         return (
                           <TableRow key={p.id} hover
-                            sx={{ bgcolor: finalizado && calcPoints(p) === 12 ? 'rgba(76,175,80,0.06)' : 'inherit' }}>
+                            sx={{ bgcolor: finalizado && calcPoints(p) === 12 ? 'rgba(76,175,80,0.06)' : enCurso ? 'rgba(255,152,0,0.05)' : 'inherit' }}>
                             <TableCell>
                               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, flexWrap: 'wrap' }}>
                                 <FlagImg country={p.local} size={16} />
@@ -255,8 +259,8 @@ export default function AdminQuinielaView() {
                               </Typography>
                             </TableCell>
                             <TableCell align="center">
-                              {finalizado ? (
-                                <Typography variant="body1" fontWeight={700}>
+                              {(finalizado || enCurso) ? (
+                                <Typography variant="body1" fontWeight={700} sx={{ color: enCurso ? 'warning.main' : 'inherit' }}>
                                   {p.goles_local_real} – {p.goles_visitante_real}
                                 </Typography>
                               ) : (
