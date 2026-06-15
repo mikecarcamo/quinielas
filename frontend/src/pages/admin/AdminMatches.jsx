@@ -88,6 +88,8 @@ export default function AdminMatches() {
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
 
+  const hoy = new Date().toISOString().split('T')[0];
+
   return (
     <Box>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2, flexWrap: 'wrap', gap: 1 }}>
@@ -101,8 +103,9 @@ export default function AdminMatches() {
         const finalizados = dayMatches.filter(m => m.status === 'finalizado').length;
         const enCurso = dayMatches.filter(m => m.status === 'en_curso').length;
         const fechaLabel = formatDate(fecha, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
+        const esHoy = fecha === hoy;
         return (
-          <Accordion key={fecha} defaultExpanded={finalizados > 0 || enCurso > 0} disableGutters
+          <Accordion key={fecha} defaultExpanded={esHoy} disableGutters
             sx={{ mb: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: enCurso > 0 ? 'warning.main' : finalizados === dayMatches.length ? 'success.dark' : 'divider', borderRadius: '12px !important', '&:before': { display: 'none' } }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 1 }}>
