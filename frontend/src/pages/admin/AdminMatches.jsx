@@ -102,7 +102,7 @@ export default function AdminMatches() {
         const enCurso = dayMatches.filter(m => m.status === 'en_curso').length;
         const fechaLabel = formatDate(fecha, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
         return (
-          <Accordion key={fecha} defaultExpanded={enCurso > 0} disableGutters
+          <Accordion key={fecha} defaultExpanded={finalizados > 0 || enCurso > 0} disableGutters
             sx={{ mb: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: enCurso > 0 ? 'warning.main' : finalizados === dayMatches.length ? 'success.dark' : 'divider', borderRadius: '12px !important', '&:before': { display: 'none' } }}>
             <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 1 }}>
