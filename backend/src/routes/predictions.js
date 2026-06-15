@@ -219,4 +219,32 @@ router.get('/has-quinela/:event_id', verifyToken, (req, res) => {
   res.json({ hasQuiniela: count.cnt > 0 });
 });
 
+// Admin: ver todas las predicciones de un partido específico, ordenadas por puntos
+router.get('/match/:match_id', verifyToken, (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Sin acceso' });
+  const { match_id } = req.params;
+
+  const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(match_id);
+  if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
+
+  const rows = db.prepare(`
+    SELECT
+      u.id as user_id,
+      u.nombre_completo,
+      p.goles_local_pred,
+      p.goles_visitante_pred,
+      p.puntos_obtenidos,
+      m.goles_local_real,
+      m.goles_visitante_real,
+      m.status as match_status
+    FROM predictions p
+    JOIN users u ON p.user_id = u.id
+    JOIN matches m ON p.match_id = m.id
+    WHERE p.match_id = ?
+    ORDER BY p.puntos_obtenidos DESC, u.nombre_completo ASC
+  `).all(match_id);
+
+  res.json({ match, predictions: rows });
+});
+
 module.exports = router;

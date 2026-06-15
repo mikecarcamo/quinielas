@@ -33,7 +33,7 @@ function calculatePoints(pred, real) {
  */
 function recalculateMatchPoints(db, matchId) {
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(matchId);
-  if (!match || match.status !== 'finalizado') return;
+  if (!match || (match.status !== 'finalizado' && match.status !== 'en_curso')) return;
 
   const predictions = db.prepare('SELECT * FROM predictions WHERE match_id = ?').all(matchId);
   const update = db.prepare('UPDATE predictions SET puntos_obtenidos = ? WHERE id = ?');

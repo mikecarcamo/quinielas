@@ -59,9 +59,8 @@ router.patch('/:id/result', verifyToken, requireAdmin, (req, res) => {
     WHERE id = ?
   `).run(goles_local_real, goles_visitante_real, nuevoStatus, debeFinalizarse ? 1 : 0, req.params.id);
 
-  if (debeFinalizarse) {
-    recalculateMatchPoints(db, Number(req.params.id));
-  }
+  // Recalcular puntos en tiempo real tanto para marcador parcial (en_curso) como finalizado
+  recalculateMatchPoints(db, Number(req.params.id));
 
   const updated = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
   res.json(updated);

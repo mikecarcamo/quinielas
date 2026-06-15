@@ -66,7 +66,9 @@ export default function QuinielaView() {
     </Box>
   );
 
-  const groups = [...new Set(preds.map((p) => p.grupo))].sort();
+  // Ordenar por fecha, hora, id (igual que QuinielaForm)
+  const sortedPreds = [...preds].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || a.id - b.id);
+  const days = [...new Set(sortedPreds.map((p) => p.fecha))].sort();
   const totalPts = preds.reduce((s, p) => (p.match_status === 'finalizado' || p.match_status === 'en_curso') ? s + (calcPoints(p) ?? 0) : s, 0);
   const played = preds.filter((p) => p.match_status === 'finalizado').length;
   const enCursoCount = preds.filter((p) => p.match_status === 'en_curso').length;
@@ -89,21 +91,22 @@ export default function QuinielaView() {
       {preds.length === 0 ? (
         <Alert severity="info">Este usuario aún no ha ingresado su quiniela.</Alert>
       ) : (
-        groups.map((grupo) => {
-          const gPreds = preds.filter((p) => p.grupo === grupo);
-          const finalizados = gPreds.filter((p) => p.match_status === 'finalizado');
-          const enCursoGrupo = gPreds.filter((p) => p.match_status === 'en_curso');
-          const gpPts = [...finalizados, ...enCursoGrupo].reduce((s, p) => s + (calcPoints(p) ?? 0), 0);
+        days.map((fecha, idx) => {
+          const dayPreds = sortedPreds.filter((p) => p.fecha === fecha);
+          const finalizados = dayPreds.filter((p) => p.match_status === 'finalizado');
+          const enCursoDia = dayPreds.filter((p) => p.match_status === 'en_curso');
+          const dayPts = [...finalizados, ...enCursoDia].reduce((s, p) => s + (calcPoints(p) ?? 0), 0);
+          const fechaLabel = formatDate(fecha, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
           return (
-            <Accordion key={grupo} defaultExpanded disableGutters
+            <Accordion key={fecha} defaultExpanded={idx < 3} disableGutters
               sx={{ mb: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: '10px !important', '&:before': { display: 'none' } }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 1, flexWrap: 'wrap' }}>
-                  <Typography variant="subtitle1" fontWeight={700} sx={{ minWidth: 80 }}>Grupo {grupo}</Typography>
-                  {(finalizados.length > 0 || enCursoGrupo.length > 0) && <Chip label={`${gpPts} pts`} size="small" color={enCursoGrupo.length > 0 ? 'warning' : 'primary'} variant="outlined" />}
-                  <Chip label={`${finalizados.length}/${gPreds.length} jugados`} size="small"
-                    color={finalizados.length === gPreds.length ? 'success' : enCursoGrupo.length > 0 ? 'warning' : 'default'} />
+                  <Typography variant="subtitle1" fontWeight={700} sx={{ textTransform: 'capitalize' }}>{fechaLabel}</Typography>
+                  {(finalizados.length > 0 || enCursoDia.length > 0) && <Chip label={`${dayPts} pts`} size="small" color={enCursoDia.length > 0 ? 'warning' : 'primary'} variant="outlined" />}
+                  <Chip label={`${finalizados.length}/${dayPreds.length} jugados`} size="small"
+                    color={finalizados.length === dayPreds.length ? 'success' : enCursoDia.length > 0 ? 'warning' : 'default'} />
                 </Box>
               </AccordionSummary>
               <AccordionDetails sx={{ px: 1, pt: 0 }}>
@@ -112,14 +115,15 @@ export default function QuinielaView() {
                     <TableHead>
                       <TableRow sx={{ bgcolor: 'background.default' }}>
                         <TableCell>Partido</TableCell>
-                        <TableCell align="center">Fecha</TableCell>
+                        <TableCell align="center">Grupo</TableCell>
+                        <TableCell align="center">Hora</TableCell>
                         <TableCell align="center">Pronóstico</TableCell>
                         <TableCell align="center">Resultado Real</TableCell>
                         <TableCell align="center">Puntos</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {gPreds.map((p) => {
+                      {dayPreds.map((p) => {
                         const finalizado = p.match_status === 'finalizado';
                         const enCurso = p.match_status === 'en_curso';
                         return (
@@ -135,8 +139,13 @@ export default function QuinielaView() {
                               </Box>
                             </TableCell>
                             <TableCell align="center">
+                              <Typography variant="caption" color="text.secondary" fontWeight={600}>
+                                {p.grupo}
+                              </Typography>
+                            </TableCell>
+                            <TableCell align="center">
                               <Typography variant="caption" color="text.secondary">
-                                {formatDate(p.fecha, { day: '2-digit', month: 'short' })}
+                                {p.hora || '—'}
                               </Typography>
                             </TableCell>
                             <TableCell align="center">

@@ -174,9 +174,8 @@ async function syncMatches(db, recalculateMatchPoints) {
         `UPDATE matches SET goles_local_real=?, goles_visitante_real=?, status=?, resultado_editado=0 WHERE id=?`
       ).run(scoreHome, scoreAway, nuevoStatus, match.id);
 
-      if (nuevoStatus === 'finalizado') {
-        recalculateMatchPoints(db, match.id);
-      }
+      // Recalcular puntos en tiempo real tanto para en_curso como finalizado
+      recalculateMatchPoints(db, match.id);
 
       console.log(`[FIFA-SYNC] ⚽ ${homeTeam} ${scoreHome}-${scoreAway} ${awayTeam} [${apiStatus}]`);
       synced++;

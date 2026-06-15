@@ -9,6 +9,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import api from '../../api/axios';
 import { FlagImg } from '../../lib/flags.jsx';
 import { useEvent } from '../../context/EventContext';
@@ -24,6 +25,9 @@ export default function AdminMatches() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const { selectedEventId, selectedEvent } = useEvent();
+
+  // Diálogo de predicciones
+  const [predDialog, setPredDialog] = useState({ open: false, match: null, predictions: [], loading: false });
 
   const load = () => {
     if (!selectedEventId) return;
@@ -66,6 +70,21 @@ export default function AdminMatches() {
 
   const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora||'').localeCompare(b.hora||'') || a.id - b.id);
   const days = [...new Set(sortedMatches.map(m => m.fecha))].sort();
+
+  // Funciones para diálogo de predicciones
+  const openPredDialog = async (match) => {
+    setPredDialog({ open: true, match, predictions: [], loading: true });
+    try {
+      const res = await api.get(`/predictions/match/${match.id}`);
+      setPredDialog(prev => ({ ...prev, predictions: res.data.predictions, loading: false }));
+    } catch (err) {
+      setPredDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const closePredDialog = () => {
+    setPredDialog({ open: false, match: null, predictions: [], loading: false });
+  };
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
 
@@ -134,6 +153,11 @@ export default function AdminMatches() {
                       <FlagImg country={m.visitante} size={18} />
                       <Typography variant="body2" fontWeight={600} sx={{ fontSize: { xs: 11, sm: 14 }, lineHeight: 1.2 }}>{m.visitante}</Typography>
                     </Box>
+                    <Tooltip title="Ver pronósticos">
+                      <IconButton size="small" onClick={() => openPredDialog(m)} color="info" sx={{ flexShrink: 0 }}>
+                        <VisibilityIcon />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title={m.status === 'finalizado' ? 'Corregir resultado' : 'Cargar resultado'}>
                       <IconButton size="small" onClick={() => openDialog(m)} color="primary" sx={{ flexShrink: 0 }}>
                         {m.status === 'finalizado' ? <CheckCircleIcon /> : <EditIcon />}
@@ -190,6 +214,90 @@ export default function AdminMatches() {
             color={dialog.match?.status === 'en_curso' && !form.finalizar ? 'warning' : 'primary'}>
             {saving ? 'Guardando...' : dialog.match?.status === 'en_curso' && !form.finalizar ? 'Actualizar marcador parcial' : 'Guardar resultado'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Diálogo de predicciones del partido */}
+      <Dialog open={predDialog.open} onClose={closePredDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <VisibilityIcon color="info" />
+            <Typography variant="h6">
+              Pronósticos — {predDialog.match?.local} vs {predDialog.match?.visitante}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {predDialog.loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : predDialog.predictions.length === 0 ? (
+            <Alert severity="info">Aún no hay pronósticos para este partido.</Alert>
+          ) : (
+            <>
+              <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Chip label={`${predDialog.predictions.length} pronósticos`} color="primary" variant="outlined" />
+                {predDialog.match?.status !== 'pendiente' && (
+                  <Chip 
+                    label={`Resultado: ${predDialog.match?.goles_local_real} – ${predDialog.match?.goles_visitante_real}`} 
+                    color={predDialog.match?.status === 'en_curso' ? 'warning' : 'success'} 
+                  />
+                )}
+              </Box>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'background.default' }}>
+                      <TableCell>#</TableCell>
+                      <TableCell>Participante</TableCell>
+                      <TableCell align="center">Pronóstico</TableCell>
+                      <TableCell align="center">Resultado Real</TableCell>
+                      <TableCell align="center">Puntos</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {predDialog.predictions.map((p, idx) => {
+                      const color = p.puntos_obtenidos === 12 ? 'success' : p.puntos_obtenidos >= 7 ? 'warning' : p.puntos_obtenidos > 0 ? 'default' : 'error';
+                      return (
+                        <TableRow key={p.user_id} hover>
+                          <TableCell sx={{ width: 40 }}>{idx + 1}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600}>{p.nombre_completo}</Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="body2" fontWeight={700} color="primary.light">
+                              {p.goles_local_pred} – {p.goles_visitante_pred}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            {(p.match_status === 'finalizado' || p.match_status === 'en_curso') ? (
+                              <Typography variant="body2" fontWeight={700} sx={{ color: p.match_status === 'en_curso' ? 'warning.main' : 'inherit' }}>
+                                {p.goles_local_real} – {p.goles_visitante_real}
+                              </Typography>
+                            ) : (
+                              <Typography variant="caption" color="text.secondary">—</Typography>
+                            )}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip 
+                              label={p.puntos_obtenidos > 0 ? `+${p.puntos_obtenidos} pts` : `${p.puntos_obtenidos} pts`} 
+                              size="small" 
+                              color={color}
+                              sx={{ fontWeight: 700 }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closePredDialog}>Cerrar</Button>
         </DialogActions>
       </Dialog>
     </Box>
