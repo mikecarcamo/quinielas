@@ -2,12 +2,15 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box, Typography, Card, CardContent, TextField, Button, Alert, Chip,
   CircularProgress, Divider, Grid, Accordion, AccordionSummary, AccordionDetails,
-  LinearProgress,
+  LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions,
+  Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
+  IconButton, Tooltip,
 } from '@mui/material';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import LockIcon from '@mui/icons-material/Lock';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import api from '../api/axios';
 import { useNavigate } from 'react-router-dom';
 import { FlagImg } from '../lib/flags.jsx';
@@ -20,13 +23,14 @@ function isPredFilled(p) {
 }
 
 
-function MatchPredictionRow({ match, value, onChange, disabled }) {
+function MatchPredictionRow({ match, value, onChange, disabled, onViewPredictions, hasQuiniela }) {
   const hora = match.hora || '—';
   const filled = isPredFilled(value);
   const closed = isPastDeadline(match.fecha, match.hora);
   const finalizado = match.status === 'finalizado';
   const enCurso = match.status === 'en_curso';
   const isLocked = disabled || closed || finalizado || enCurso;
+  const tieneResultado = finalizado || enCurso;
 
   let statusChip = null;
   if (finalizado) {
@@ -46,13 +50,25 @@ function MatchPredictionRow({ match, value, onChange, disabled }) {
       border: '1px solid', borderColor: finalizado ? 'divider' : filled ? 'primary.dark' : 'divider',
       opacity: isLocked && !filled ? 0.6 : 1,
     }}>
-      {/* Fila superior: hora + status */}
+      {/* Fila superior: hora + status + ojo */}
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
         <Typography variant="caption" color="text.secondary" sx={{ fontSize: 10 }}>
           {formatDate(match.fecha, { day: '2-digit', month: 'short' })} · {hora}
         </Typography>
-        {statusChip}
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+          {statusChip}
+        </Box>
       </Box>
+      {/* Botón de ojo debajo del pill (solo si hay resultado y usuario tiene quiniela) */}
+      {tieneResultado && hasQuiniela && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 0.5 }}>
+          <Tooltip title="Ver pronósticos de otros">
+            <IconButton size="small" onClick={() => onViewPredictions(match)} color="info" sx={{ p: 0.3 }}>
+              <VisibilityIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Box>
+      )}
 
       {/* Fila principal: local — score — visitante */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: { xs: 0.5, sm: 1 } }}>
@@ -95,7 +111,7 @@ function MatchPredictionRow({ match, value, onChange, disabled }) {
   );
 }
 
-function DaySection({ fecha, matches, predictions, onChange, disabled, index }) {
+function DaySection({ fecha, matches, predictions, onChange, disabled, index, onViewPredictions, hasQuiniela }) {
   const filled = matches.filter((m) => isPredFilled(predictions[m.id])).length;
   const total = matches.length;
   const complete = filled === total;
@@ -132,6 +148,8 @@ function DaySection({ fecha, matches, predictions, onChange, disabled, index }) 
             value={predictions[match.id]}
             onChange={onChange}
             disabled={disabled || match.status === 'finalizado'}
+            onViewPredictions={onViewPredictions}
+            hasQuiniela={hasQuiniela}
           />
         ))}
       </AccordionDetails>
@@ -150,6 +168,9 @@ export default function QuinielaForm() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Diálogo de pronósticos de otros usuarios
+  const [predDialog, setPredDialog] = useState({ open: false, match: null, predictions: [], loading: false });
 
   useEffect(() => {
     if (!selectedEventId) return;
@@ -186,6 +207,21 @@ export default function QuinielaForm() {
   const days = [...new Set(sortedMatches.map((m) => m.fecha))].sort();
   const openMatches = matches.filter((m) => !isPastDeadline(m.fecha, m.hora));
   const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id])).length;
+
+  // Funciones para diálogo de pronósticos
+  const openPredDialog = async (match) => {
+    setPredDialog({ open: true, match, predictions: [], loading: true });
+    try {
+      const res = await api.get(`/predictions/match/${match.id}`);
+      setPredDialog(prev => ({ ...prev, predictions: res.data.predictions, loading: false }));
+    } catch (err) {
+      setPredDialog(prev => ({ ...prev, loading: false }));
+    }
+  };
+
+  const closePredDialog = () => {
+    setPredDialog({ open: false, match: null, predictions: [], loading: false });
+  };
 
   const handleSubmit = async () => {
     const filledOpen = openMatches.filter((m) => isPredFilled(predictions[m.id]));
@@ -274,6 +310,8 @@ export default function QuinielaForm() {
             predictions={predictions}
             onChange={handleChange}
             disabled={!canPredict}
+            onViewPredictions={openPredDialog}
+            hasQuiniela={hasQuiniela}
           />
         ))}
       </Box>
@@ -296,6 +334,90 @@ export default function QuinielaForm() {
           </Button>
         </Box>
       )}
+
+      {/* Diálogo de pronósticos de otros usuarios */}
+      <Dialog open={predDialog.open} onClose={closePredDialog} maxWidth="md" fullWidth>
+        <DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <VisibilityIcon color="info" />
+            <Typography variant="h6">
+              Pronósticos — {predDialog.match?.local} vs {predDialog.match?.visitante}
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {predDialog.loading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : predDialog.predictions.length === 0 ? (
+            <Alert severity="info">Aún no hay pronósticos para este partido.</Alert>
+          ) : (
+            <>
+              <Box sx={{ mb: 2, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
+                <Chip label={`${predDialog.predictions.length} pronósticos`} color="primary" variant="outlined" />
+                {predDialog.match?.status !== 'pendiente' && (
+                  <Chip 
+                    label={`Resultado: ${predDialog.match?.goles_local_real} – ${predDialog.match?.goles_visitante_real}`} 
+                    color={predDialog.match?.status === 'en_curso' ? 'warning' : 'success'} 
+                  />
+                )}
+              </Box>
+              <TableContainer component={Paper} variant="outlined">
+                <Table size="small">
+                  <TableHead>
+                    <TableRow sx={{ bgcolor: 'background.default' }}>
+                      <TableCell>#</TableCell>
+                      <TableCell>Participante</TableCell>
+                      <TableCell align="center">Pronóstico</TableCell>
+                      <TableCell align="center">Resultado Real</TableCell>
+                      <TableCell align="center">Puntos</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {predDialog.predictions.map((p, idx) => {
+                      const color = p.puntos_obtenidos === 12 ? 'success' : p.puntos_obtenidos >= 7 ? 'warning' : p.puntos_obtenidos > 0 ? 'default' : 'error';
+                      return (
+                        <TableRow key={p.user_id} hover>
+                          <TableCell sx={{ width: 40 }}>{idx + 1}</TableCell>
+                          <TableCell>
+                            <Typography variant="body2" fontWeight={600}>{p.nombre_completo}</Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            <Typography variant="body2" fontWeight={700} color="primary.light">
+                              {p.goles_local_pred} – {p.goles_visitante_pred}
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="center">
+                            {(p.match_status === 'finalizado' || p.match_status === 'en_curso') ? (
+                              <Typography variant="body2" fontWeight={700} sx={{ color: p.match_status === 'en_curso' ? 'warning.main' : 'inherit' }}>
+                                {p.goles_local_real} – {p.goles_visitante_real}
+                              </Typography>
+                            ) : (
+                              <Typography variant="caption" color="text.secondary">—</Typography>
+                            )}
+                          </TableCell>
+                          <TableCell align="center">
+                            <Chip 
+                              label={p.puntos_obtenidos > 0 ? `+${p.puntos_obtenidos} pts` : `${p.puntos_obtenidos} pts`} 
+                              size="small" 
+                              color={color}
+                              sx={{ fontWeight: 700 }}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={closePredDialog}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

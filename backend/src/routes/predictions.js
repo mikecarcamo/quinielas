@@ -219,10 +219,20 @@ router.get('/has-quinela/:event_id', verifyToken, (req, res) => {
   res.json({ hasQuiniela: count.cnt > 0 });
 });
 
-// Admin: ver todas las predicciones de un partido específico, ordenadas por puntos
+// Ver todas las predicciones de un partido específico (admin o usuarios con quiniela)
 router.get('/match/:match_id', verifyToken, (req, res) => {
-  if (req.user.role !== 'admin') return res.status(403).json({ error: 'Sin acceso' });
   const { match_id } = req.params;
+  const userId = req.user.id;
+
+  // Si no es admin, verificar que tenga quiniela propia
+  if (req.user.role !== 'admin') {
+    const hasPrediction = db.prepare(`
+      SELECT COUNT(*) as cnt FROM predictions WHERE user_id = ? LIMIT 1
+    `).get(userId);
+    if (hasPrediction.cnt === 0) {
+      return res.status(403).json({ error: 'Debes ingresar tu quiniela primero para ver la de otros.' });
+    }
+  }
 
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(match_id);
   if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
