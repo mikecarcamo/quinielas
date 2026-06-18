@@ -65,9 +65,9 @@ router.post('/bulk', verifyToken, (req, res) => {
       if (!match) throw new Error(`Partido ${p.match_id} no válido`);
       if (match.status === 'finalizado') throw new Error(`Partido ${p.match_id} ya finalizó`);
 
-      // Validar que el partido no esté cerrado (más de 1h antes del inicio)
-      if (isMatchClosed(match)) {
-        throw new Error(`El partido ${match.local} vs ${match.visitante} ya cerró o está por iniciar.`);
+      // Bloquear si el partido ya tiene marcador (ingresado por admin o FIFA sync)
+      if (match.goles_local_real !== null && match.goles_local_real !== undefined) {
+        throw new Error(`El partido ${match.local} vs ${match.visitante} ya tiene resultado y no puede modificarse.`);
       }
 
       if (p.goles_local_pred === undefined || p.goles_visitante_pred === undefined) {
@@ -119,9 +119,9 @@ router.put('/bulk', verifyToken, (req, res) => {
       if (!match) throw new Error(`Partido ${p.match_id} no válido`);
       if (match.status === 'finalizado') throw new Error(`El partido ${match.local} vs ${match.visitante} ya finalizó.`);
 
-      // Validar que el partido no esté cerrado
-      if (isMatchClosed(match)) {
-        throw new Error(`El partido ${match.local} vs ${match.visitante} ya cerró o está por iniciar.`);
+      // Bloquear si el partido ya tiene marcador (ingresado por admin o FIFA sync)
+      if (match.goles_local_real !== null && match.goles_local_real !== undefined) {
+        throw new Error(`El partido ${match.local} vs ${match.visitante} ya tiene resultado y no puede modificarse.`);
       }
 
       let pts = 0;

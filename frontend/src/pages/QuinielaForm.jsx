@@ -16,7 +16,7 @@ import { useNavigate } from 'react-router-dom';
 import { FlagImg } from '../lib/flags.jsx';
 import { useEvent } from '../context/EventContext';
 import EventSelector from '../components/EventSelector';
-import { formatDate, isPastDeadline } from '../lib/dates';
+import { formatDate } from '../lib/dates';
 
 function isPredFilled(p) {
   return p && p.goles_local !== '' && p.goles_local !== undefined && p.goles_visitante !== '' && p.goles_visitante !== undefined;
@@ -26,19 +26,19 @@ function isPredFilled(p) {
 function MatchPredictionRow({ match, value, onChange, disabled, onViewPredictions, hasQuiniela }) {
   const hora = match.hora || '—';
   const filled = isPredFilled(value);
-  const closed = isPastDeadline(match.fecha, match.hora);
   const finalizado = match.status === 'finalizado';
   const enCurso = match.status === 'en_curso';
-  const isLocked = disabled || closed || finalizado || enCurso;
-  const tieneResultado = finalizado || enCurso;
+  const tieneMarcador = match.goles_local_real !== null && match.goles_local_real !== undefined;
+  const isLocked = disabled || finalizado || enCurso || tieneMarcador;
+  const tieneResultado = finalizado || enCurso || tieneMarcador;
 
   let statusChip = null;
   if (finalizado) {
     statusChip = <Chip label="Finalizado" size="small" color="default" sx={{ fontSize: 10, height: 18, flexShrink: 0 }} />;
   } else if (enCurso) {
     statusChip = <Chip label="🔴 En curso" size="small" color="warning" sx={{ fontSize: 10, height: 18, flexShrink: 0 }} />;
-  } else if (closed) {
-    statusChip = <Chip label="Cerrado" size="small" color="error" sx={{ fontSize: 10, height: 18, flexShrink: 0 }} />;
+  } else if (tieneMarcador) {
+    statusChip = <Chip label="Con resultado" size="small" color="error" sx={{ fontSize: 10, height: 18, flexShrink: 0 }} />;
   } else if (filled) {
     statusChip = <CheckCircleIcon sx={{ color: 'primary.main', fontSize: 16, flexShrink: 0 }} />;
   }
@@ -46,7 +46,7 @@ function MatchPredictionRow({ match, value, onChange, disabled, onViewPrediction
   return (
     <Box sx={{
       py: 1, px: 1.5, borderRadius: 2, mb: 0.5,
-      bgcolor: finalizado ? 'rgba(255,255,255,0.02)' : closed ? 'rgba(255,0,0,0.04)' : filled ? 'rgba(212,160,23,0.06)' : 'background.default',
+      bgcolor: finalizado ? 'rgba(255,255,255,0.02)' : tieneMarcador ? 'rgba(255,0,0,0.04)' : filled ? 'rgba(212,160,23,0.06)' : 'background.default',
       border: '1px solid', borderColor: finalizado ? 'divider' : filled ? 'primary.dark' : 'divider',
       opacity: isLocked && !filled ? 0.6 : 1,
     }}>
@@ -205,7 +205,7 @@ export default function QuinielaForm() {
 
   const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || a.id - b.id);
   const days = [...new Set(sortedMatches.map((m) => m.fecha))].sort();
-  const openMatches = matches.filter((m) => !isPastDeadline(m.fecha, m.hora));
+  const openMatches = matches.filter((m) => m.status === 'pendiente' && m.goles_local_real === null);
   const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id])).length;
 
   // Funciones para diálogo de pronósticos
