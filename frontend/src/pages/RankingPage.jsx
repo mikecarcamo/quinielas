@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, Chip, CircularProgress, Card, CardContent, Grid, Avatar, Tooltip, IconButton,
+  TableRow, Paper, Chip, CircularProgress, Card, CardContent, Grid, Avatar, Tooltip, IconButton, Button,
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
 import { useAuth } from '../context/AuthContext';
@@ -56,7 +57,18 @@ export default function RankingPage() {
           <Typography variant="h5">Ranking — {event.nombre}</Typography>
           <Typography variant="body2" color="text.secondary">Clasificación en tiempo real</Typography>
         </Box>
-        <EventSelector onlyApproved={false} />
+        <Box className="no-print" sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
+          <EventSelector onlyApproved={false} />
+          <Button
+            variant="outlined"
+            size="small"
+            startIcon={<PictureAsPdfIcon />}
+            onClick={() => window.print()}
+            sx={{ whiteSpace: 'nowrap' }}
+          >
+            Exportar PDF
+          </Button>
+        </Box>
       </Box>
 
       <Grid container spacing={2} sx={{ mb: 3 }}>

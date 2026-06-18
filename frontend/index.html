@@ -7,6 +7,27 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+    <style>
+      @media print {
+        /* Ocultar sidebar, nav y elementos de UI */
+        nav, header, aside,
+        [class*="MuiDrawer"], [class*="MuiAppBar"],
+        .no-print { display: none !important; }
+
+        /* Fondo blanco y texto negro */
+        body, #root { background: #fff !important; color: #000 !important; }
+
+        /* Ajustar el contenido principal para que ocupe todo el ancho */
+        main, [class*="MuiBox-root"] > [class*="MuiBox-root"]:first-child { margin-left: 0 !important; }
+
+        /* Colores de tabla visibles en impresión */
+        [class*="MuiTableCell"] { color: #000 !important; border-color: #ccc !important; }
+        [class*="MuiPaper"], [class*="MuiCard"] { box-shadow: none !important; border: 1px solid #ccc !important; }
+
+        /* Evitar corte de filas en tabla */
+        tr { page-break-inside: avoid; }
+      }
+    </style>
   </head>
   <body>
     <div id="root"></div>
