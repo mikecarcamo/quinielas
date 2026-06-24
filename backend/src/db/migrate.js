@@ -91,6 +91,15 @@ if (!existingEvent) {
   console.log('Evento Mundial 2026 ya existe con id:', eventId);
 }
 
+// Crear evento de dieciseisavos si no existe
+const existing16 = db.prepare('SELECT id FROM events WHERE nombre = ?').get('Mundial 2026 - Dieciseisavos');
+if (!existing16) {
+  const result16 = db.prepare('INSERT INTO events (nombre, precio_entrada) VALUES (?,?)').run('Mundial 2026 - Dieciseisavos', 100);
+  console.log('Evento Mundial 2026 - Dieciseisavos creado con id:', result16.lastInsertRowid);
+} else {
+  console.log('Evento Mundial 2026 - Dieciseisavos ya existe con id:', existing16.id);
+}
+
 const adminExists = db.prepare('SELECT id FROM users WHERE email = ?').get('admin@quiniela.com');
 if (!adminExists) {
   const hash = bcrypt.hashSync('Admin1234!', 10);

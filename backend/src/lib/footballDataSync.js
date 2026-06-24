@@ -111,6 +111,26 @@ function apiGet(path) {
   });
 }
 
+// ── Helpers de eventos por fase ─────────────────────────────────────────
+function getEventIdByPhase(db, phase) {
+  // fase de grupos: buscar evento "Mundial 2026"
+  if (phase === 'GROUP_STAGE') {
+    const ev = db.prepare('SELECT id FROM events WHERE nombre = ?').get('Mundial 2026');
+    return ev ? ev.id : null;
+  }
+  // dieciseisavos (round of 32): buscar o crear evento
+  if (phase === 'LAST_32' || phase === 'ROUND_OF_32') {
+    let ev = db.prepare('SELECT id FROM events WHERE nombre = ?').get('Mundial 2026 - Dieciseisavos');
+    if (!ev) {
+      const result = db.prepare('INSERT INTO events (nombre, precio_entrada) VALUES (?,?)').run('Mundial 2026 - Dieciseisavos', 100);
+      ev = { id: result.lastInsertRowid };
+      console.log('[FIFA-SYNC] Evento Mundial 2026 - Dieciseisavos creado con id:', ev.id);
+    }
+    return ev.id;
+  }
+  return null;
+}
+
 // ── Lógica de sincronización ──────────────────────────────────────────────
 async function syncMatches(db, recalculateMatchPoints) {
   const today = new Date().toISOString().slice(0, 10);
@@ -137,6 +157,7 @@ async function syncMatches(db, recalculateMatchPoints) {
     const homeTeam = normalize(homeRaw);
     const awayTeam = normalize(awayRaw);
     const apiStatus = am.status; // SCHEDULED, IN_PLAY, PAUSED, FINISHED, POSTPONED
+    const phase = am.stage; // GROUP_STAGE, LAST_32, etc.
 
     if (apiStatus === 'IN_PLAY' || apiStatus === 'PAUSED') hasLive = true;
     if (am.utcDate?.slice(0, 10) === today) hasToday = true;
@@ -147,15 +168,45 @@ async function syncMatches(db, recalculateMatchPoints) {
     const scoreAway = am.score?.fullTime?.away ?? am.score?.halfTime?.away ?? null;
     if (scoreHome === null || scoreAway === null) continue;
 
-    // Buscar partido en BD por equipos (orden local/visitante)
-    const match = db.prepare(
+    // Determinar evento según fase
+    const eventId = getEventIdByPhase(db, phase);
+    if (!eventId) {
+      console.warn(`[FIFA-SYNC] Fase no reconocida: ${phase} para ${homeTeam} vs ${awayTeam}`);
+      continue;
+    }
+
+    // Buscar partido en BD por equipos y evento
+    let match = db.prepare(
       `SELECT id, status, goles_local_real, goles_visitante_real, resultado_editado
-       FROM matches WHERE local = ? AND visitante = ?`
-    ).get(homeTeam, awayTeam)
-    || db.prepare(
-      `SELECT id, status, goles_local_real, goles_visitante_real, resultado_editado
-       FROM matches WHERE local = ? AND visitante = ?`
-    ).get(awayTeam, homeTeam); // por si el orden está invertido
+       FROM matches WHERE local = ? AND visitante = ? AND event_id = ?`
+    ).get(homeTeam, awayTeam, eventId);
+
+    if (!match) {
+      // Para fase de grupos, mantener compatibilidad: buscar sin event_id
+      if (phase === 'GROUP_STAGE') {
+        match = db.prepare(
+          `SELECT id, status, goles_local_real, goles_visitante_real, resultado_editado
+           FROM matches WHERE local = ? AND visitante = ?`
+        ).get(homeTeam, awayTeam)
+        || db.prepare(
+          `SELECT id, status, goles_local_real, goles_visitante_real, resultado_editado
+           FROM matches WHERE local = ? AND visitante = ?`
+        ).get(awayTeam, homeTeam);
+      }
+    }
+
+    // Crear automáticamente partidos de dieciseisavos si no existen
+    if (!match && phase !== 'GROUP_STAGE') {
+      const utcDate = new Date(am.utcDate);
+      const fecha = new Date(utcDate.getTime() - (7 * 60 * 60 * 1000)).toISOString().slice(0, 10); // GMT-6 aprox
+      const hora = new Date(utcDate.getTime() - (7 * 60 * 60 * 1000)).toTimeString().slice(0, 5);
+      const result = db.prepare(`
+        INSERT INTO matches (event_id, local, visitante, fecha, hora, grupo, fase)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).run(eventId, homeTeam, awayTeam, fecha, hora, null, 'dieciseisavos');
+      match = { id: result.lastInsertRowid, status: 'pendiente', goles_local_real: null, goles_visitante_real: null, resultado_editado: 0 };
+      console.log(`[FIFA-SYNC] Partido creado: ${homeTeam} vs ${awayTeam} [${fecha} ${hora}]`);
+    }
 
     if (!match) {
       console.warn(`[FIFA-SYNC] Partido no encontrado en BD: "${homeTeam}" vs "${awayTeam}" (raw: "${homeRaw}" vs "${awayRaw}")`);
