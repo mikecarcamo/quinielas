@@ -10,6 +10,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import UndoIcon from '@mui/icons-material/Undo';
 import api from '../../api/axios';
 import { FlagImg } from '../../lib/flags.jsx';
 import { useEvent } from '../../context/EventContext';
@@ -24,6 +25,7 @@ export default function AdminMatches() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [resetting, setResetting] = useState(false);
   const { selectedEventId, selectedEvent } = useEvent();
 
   // Diálogo de predicciones
@@ -84,6 +86,21 @@ export default function AdminMatches() {
 
   const closePredDialog = () => {
     setPredDialog({ open: false, match: null, predictions: [], loading: false });
+  };
+
+  const handleReset = async (match) => {
+    const ok = window.confirm(`¿Resetear el resultado de ${match.local} vs ${match.visitante}?\nSe pondrá como pendiente y los usuarios podrán ingresar pronósticos nuevamente.`);
+    if (!ok) return;
+    setResetting(true);
+    try {
+      await api.post(`/matches/${match.id}/reset-result`);
+      setSuccess('Resultado reseteado correctamente.');
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al resetear');
+    } finally {
+      setResetting(false);
+    }
   };
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
@@ -161,6 +178,13 @@ export default function AdminMatches() {
                         <VisibilityIcon />
                       </IconButton>
                     </Tooltip>
+                    {m.fecha === '2026-06-24' && (m.goles_local_real !== null && m.goles_local_real !== undefined) && (
+                      <Tooltip title="Deshacer resultado del 24/06">
+                        <IconButton size="small" onClick={() => handleReset(m)} color="error" sx={{ flexShrink: 0 }} disabled={resetting}>
+                          <UndoIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
                     <Tooltip title={m.status === 'finalizado' ? 'Corregir resultado' : 'Cargar resultado'}>
                       <IconButton size="small" onClick={() => openDialog(m)} color="primary" sx={{ flexShrink: 0 }}>
                         {m.status === 'finalizado' ? <CheckCircleIcon /> : <EditIcon />}
