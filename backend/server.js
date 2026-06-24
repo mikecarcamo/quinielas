@@ -268,9 +268,11 @@ app.listen(PORT, () => {
 
   // Iniciar sincronización en vivo con football-data.org (solo si hay API key)
   const { startFootballDataSync } = require('./src/lib/footballDataSync');
+  const { startAutoLockMatches } = require('./src/lib/autoLockMatches');
   const db = require('./src/db/database');
   const { recalculateMatchPoints } = require('./src/lib/scoring');
   startFootballDataSync(db, recalculateMatchPoints);
+  startAutoLockMatches(db);
 });
 
 module.exports = app;
