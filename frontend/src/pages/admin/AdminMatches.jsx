@@ -105,7 +105,7 @@ export default function AdminMatches() {
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
 
-  const hoy = new Date().toISOString().split('T')[0];
+  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' })).toISOString().split('T')[0];
 
   return (
     <Box>
@@ -178,8 +178,8 @@ export default function AdminMatches() {
                         <VisibilityIcon />
                       </IconButton>
                     </Tooltip>
-                    {m.fecha === '2026-06-24' && (m.goles_local_real !== null && m.goles_local_real !== undefined) && (
-                      <Tooltip title="Deshacer resultado del 24/06">
+                    {m.fecha >= hoy && (m.goles_local_real !== null && m.goles_local_real !== undefined) && (
+                      <Tooltip title="Deshacer resultado">
                         <IconButton size="small" onClick={() => handleReset(m)} color="error" sx={{ flexShrink: 0 }} disabled={resetting}>
                           <UndoIcon />
                         </IconButton>

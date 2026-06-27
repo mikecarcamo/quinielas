@@ -71,13 +71,14 @@ router.delete('/:id', verifyToken, requireAdmin, (req, res) => {
   res.json({ message: 'Partido eliminado' });
 });
 
-// Resetear resultado de partido del 24/06/2026 (corrección de error admin)
+// Resetear resultado de partido no finalizado (corrección de error admin)
 router.post('/:id/reset-result', verifyToken, requireAdmin, (req, res) => {
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
   if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
 
-  if (match.fecha !== '2026-06-24') {
-    return res.status(400).json({ error: 'Solo se pueden resetear partidos del 24/06/2026' });
+  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' })).toISOString().split('T')[0];
+  if (match.fecha < hoy) {
+    return res.status(400).json({ error: 'Solo se pueden resetear partidos de hoy o futuros' });
   }
 
   if (match.goles_local_real === null && match.goles_visitante_real === null) {
