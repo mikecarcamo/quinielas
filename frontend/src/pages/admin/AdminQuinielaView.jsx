@@ -24,9 +24,11 @@ function calcPoints(p) {
   if (gv === rv) pts += 5;
   if (Math.sign(gl - gv) === Math.sign(rl - rv)) pts += 2;
 
-  // Extra por ganador en penales en fase eliminatoria
+  // Extra por ganador en penales en fase eliminatoria (solo si finalizado)
   const isEliminatoria = p.fase && p.fase !== 'grupos';
+  const finalizado = p.match_status === 'finalizado';
   if (
+    finalizado &&
     isEliminatoria &&
     rl === rv &&
     gl === gv &&

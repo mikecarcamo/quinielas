@@ -23,11 +23,13 @@ function calculatePoints(pred, real) {
   const resultadoPred = Math.sign(pred.goles_local_pred - pred.goles_visitante_pred);
   if (resultadoReal === resultadoPred) points += 2;
 
-  // Puntos extra por ganador en penales en fase eliminatoria
+  // Puntos extra por ganador en penales en fase eliminatoria (solo al finalizar)
   const isEliminatoria = real.fase && real.fase !== 'grupos';
   const realEmpate = resultadoReal === 0;
   const predEmpate = resultadoPred === 0;
+  const finalizado = real.status === 'finalizado';
   if (
+    finalizado &&
     isEliminatoria &&
     realEmpate &&
     predEmpate &&
@@ -66,6 +68,7 @@ function recalculateMatchPoints(db, matchId) {
           goles_visitante_real: match.goles_visitante_real,
           ganador_penales: match.ganador_penales,
           fase: match.fase,
+          status: match.status,
         }
       );
       update.run(pts, p.id);
