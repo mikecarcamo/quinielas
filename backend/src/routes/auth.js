@@ -6,7 +6,7 @@ const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'quiniela_secret_2026';
-const JWT_EXPIRES = process.env.JWT_EXPIRES || '24h';
+const JWT_EXPIRES = '24h';
 
 router.post('/register', (req, res) => {
   const { nombre_completo, email, password } = req.body;
