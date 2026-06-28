@@ -4,7 +4,6 @@ import {
   TableRow, Paper, Chip, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Button, Alert, Tooltip, CircularProgress,
   Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Checkbox,
-  ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -233,29 +232,25 @@ export default function AdminMatches() {
           {dialog.match?.fase && dialog.match?.fase !== 'grupos' &&
             form.goles_local !== '' && form.goles_visitante !== '' &&
             Number(form.goles_local) === Number(form.goles_visitante) && (
-            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
-              <ToggleButtonGroup
-                value={form.ganador_penales || ''}
-                exclusive
-                onChange={(e, newVal) => { if (newVal !== null) setForm({ ...form, ganador_penales: newVal }); }}
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2, gap: 1 }}>
+              <Button
                 size="small"
-                sx={{ bgcolor: 'background.default' }}
+                onClick={() => setForm({ ...form, ganador_penales: 'local' })}
+                variant={form.ganador_penales === 'local' ? 'contained' : 'outlined'}
+                color="warning"
+                sx={{ fontSize: 11, py: 0.2, px: 1, minWidth: 0, fontWeight: form.ganador_penales === 'local' ? 700 : 400 }}
               >
-                <ToggleButton value="local" sx={{
-                  px: 1, py: 0.2, fontSize: 12, borderColor: 'warning.main',
-                  '&.Mui-selected': { bgcolor: 'warning.main', color: 'black', fontWeight: 700, borderColor: 'warning.main' },
-                  '&.Mui-selected:hover': { bgcolor: 'warning.dark', color: 'black' },
-                }}>
-                  Gana {dialog.match?.local} (penales)
-                </ToggleButton>
-                <ToggleButton value="visitante" sx={{
-                  px: 1, py: 0.2, fontSize: 12, borderColor: 'warning.main',
-                  '&.Mui-selected': { bgcolor: 'warning.main', color: 'black', fontWeight: 700, borderColor: 'warning.main' },
-                  '&.Mui-selected:hover': { bgcolor: 'warning.dark', color: 'black' },
-                }}>
-                  Gana {dialog.match?.visitante} (penales)
-                </ToggleButton>
-              </ToggleButtonGroup>
+                {form.ganador_penales === 'local' ? '* ' : ''}Gana {dialog.match?.local} (penales)
+              </Button>
+              <Button
+                size="small"
+                onClick={() => setForm({ ...form, ganador_penales: 'visitante' })}
+                variant={form.ganador_penales === 'visitante' ? 'contained' : 'outlined'}
+                color="warning"
+                sx={{ fontSize: 11, py: 0.2, px: 1, minWidth: 0, fontWeight: form.ganador_penales === 'visitante' ? 700 : 400 }}
+              >
+                {form.ganador_penales === 'visitante' ? '* ' : ''}Gana {dialog.match?.visitante} (penales)
+              </Button>
             </Box>
           )}
           {dialog.match?.status === 'en_curso' && (

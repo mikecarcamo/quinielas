@@ -4,7 +4,7 @@ import {
   CircularProgress, Divider, Grid, Accordion, AccordionSummary, AccordionDetails,
   LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  IconButton, Tooltip, ToggleButton, ToggleButtonGroup,
+  IconButton, Tooltip,
 } from '@mui/material';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import LockIcon from '@mui/icons-material/Lock';
@@ -84,6 +84,13 @@ function MatchPredictionRow({ match, value, onChange, disabled, onViewPrediction
           <Typography variant="body2" fontWeight={600} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: { xs: 'normal', sm: 'nowrap' }, fontSize: { xs: 11, sm: 14 }, textAlign: 'right', lineHeight: 1.2 }}>
             {match.local}
           </Typography>
+          {match.fase && match.fase !== 'grupos' &&
+            value?.goles_local !== '' && value?.goles_local !== undefined &&
+            value?.goles_visitante !== '' && value?.goles_visitante !== undefined &&
+            Number(value.goles_local) === Number(value.goles_visitante) &&
+            value?.pred_ganador_penales === 'local' && (
+              <Typography variant="body2" fontWeight={700} color="warning.main">*</Typography>
+          )}
           <FlagImg country={match.local} size={18} />
         </Box>
 
@@ -109,6 +116,13 @@ function MatchPredictionRow({ match, value, onChange, disabled, onViewPrediction
         {/* Equipo visitante */}
         <Box sx={{ flex: 1, display: 'flex', alignItems: 'center', gap: 0.5, minWidth: 0 }}>
           <FlagImg country={match.visitante} size={18} />
+          {match.fase && match.fase !== 'grupos' &&
+            value?.goles_local !== '' && value?.goles_local !== undefined &&
+            value?.goles_visitante !== '' && value?.goles_visitante !== undefined &&
+            Number(value.goles_local) === Number(value.goles_visitante) &&
+            value?.pred_ganador_penales === 'visitante' && (
+              <Typography variant="body2" fontWeight={700} color="warning.main">*</Typography>
+          )}
           <Typography variant="body2" fontWeight={600} sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: { xs: 'normal', sm: 'nowrap' }, fontSize: { xs: 11, sm: 14 }, lineHeight: 1.2 }}>
             {match.visitante}
           </Typography>
@@ -120,32 +134,27 @@ function MatchPredictionRow({ match, value, onChange, disabled, onViewPrediction
         value?.goles_local !== '' && value?.goles_local !== undefined &&
         value?.goles_visitante !== '' && value?.goles_visitante !== undefined &&
         Number(value.goles_local) === Number(value.goles_visitante) && (
-        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
-          <ToggleButtonGroup
-            value={value?.pred_ganador_penales || ''}
-            exclusive
-            disabled={isLocked}
-            onChange={(e, newVal) => {
-              if (newVal !== null) onChange(match.id, 'pred_ganador_penales', newVal);
-            }}
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1, gap: 1 }}>
+          <Button
             size="small"
-            sx={{ bgcolor: 'background.default' }}
+            disabled={isLocked}
+            onClick={() => onChange(match.id, 'pred_ganador_penales', 'local')}
+            variant={value?.pred_ganador_penales === 'local' ? 'contained' : 'outlined'}
+            color="warning"
+            sx={{ fontSize: 11, py: 0.2, px: 1, minWidth: 0, fontWeight: value?.pred_ganador_penales === 'local' ? 700 : 400 }}
           >
-            <ToggleButton value="local" sx={{
-              px: 1, py: 0.2, fontSize: 12, borderColor: 'warning.main',
-              '&.Mui-selected': { bgcolor: 'warning.main', color: 'black', fontWeight: 700, borderColor: 'warning.main' },
-              '&.Mui-selected:hover': { bgcolor: 'warning.dark', color: 'black' },
-            }}>
-              Gana {match.local} (penales)
-            </ToggleButton>
-            <ToggleButton value="visitante" sx={{
-              px: 1, py: 0.2, fontSize: 12, borderColor: 'warning.main',
-              '&.Mui-selected': { bgcolor: 'warning.main', color: 'black', fontWeight: 700, borderColor: 'warning.main' },
-              '&.Mui-selected:hover': { bgcolor: 'warning.dark', color: 'black' },
-            }}>
-              Gana {match.visitante} (penales)
-            </ToggleButton>
-          </ToggleButtonGroup>
+            {value?.pred_ganador_penales === 'local' ? '* ' : ''}Gana {match.local} (penales)
+          </Button>
+          <Button
+            size="small"
+            disabled={isLocked}
+            onClick={() => onChange(match.id, 'pred_ganador_penales', 'visitante')}
+            variant={value?.pred_ganador_penales === 'visitante' ? 'contained' : 'outlined'}
+            color="warning"
+            sx={{ fontSize: 11, py: 0.2, px: 1, minWidth: 0, fontWeight: value?.pred_ganador_penales === 'visitante' ? 700 : 400 }}
+          >
+            {value?.pred_ganador_penales === 'visitante' ? '* ' : ''}Gana {match.visitante} (penales)
+          </Button>
         </Box>
       )}
     </Box>
