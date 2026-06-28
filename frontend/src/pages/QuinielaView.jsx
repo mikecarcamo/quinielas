@@ -10,8 +10,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import api from '../api/axios';
 import { FlagImg } from '../lib/flags.jsx';
 import { formatDate } from '../lib/dates';
-
-const EVENT_ID = 1;
+import { useEvent } from '../context/EventContext';
 
 function calcPoints(p) {
   const gl = p.goles_local_pred, gv = p.goles_visitante_pred;
@@ -37,13 +36,15 @@ function PointsChip({ p }) {
 export default function QuinielaView() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const { selectedEventId, selectedEvent } = useEvent();
   const [preds, setPreds] = useState([]);
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    api.get(`/predictions/view/${userId}/${EVENT_ID}`)
+    if (!selectedEventId) return;
+    api.get(`/predictions/view/${userId}/${selectedEventId}`)
       .then((r) => {
         setPreds(r.data.predictions);
         setUserName(r.data.nombre_completo);
@@ -56,7 +57,7 @@ export default function QuinielaView() {
         }
       })
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, selectedEventId]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
   if (error) return (
@@ -81,11 +82,11 @@ export default function QuinielaView() {
 
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 1, flexWrap: 'wrap' }}>
         <Typography variant="h5" fontWeight={700}>Quiniela de {userName}</Typography>
-        <Chip label={`${preds.length} / 72 pronósticos`} color={preds.length === 72 ? 'success' : 'warning'} />
+        <Chip label={`${preds.length} / ${preds.length} pronósticos`} color={preds.length > 0 ? 'success' : 'warning'} />
         {(played > 0 || enCursoCount > 0) && <Chip label={`${totalPts} pts acumulados${enCursoCount > 0 ? ' (en curso)' : ''}`} color={enCursoCount > 0 ? 'warning' : 'primary'} variant="outlined" />}
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Mundial 2026 — Fase de Grupos · Solo lectura
+        {selectedEvent?.nombre?.includes('Dieciseisavos') ? 'Mundial 2026 — Fase de Dieciseisavos · Solo lectura' : 'Mundial 2026 — Fase de Grupos · Solo lectura'}
       </Typography>
 
       {preds.length === 0 ? (

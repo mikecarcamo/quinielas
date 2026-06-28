@@ -12,9 +12,8 @@ import RadioButtonUncheckedIcon from '@mui/icons-material/RadioButtonUnchecked';
 import api from '../../api/axios';
 import { FlagImg } from '../../lib/flags.jsx';
 import { formatDate, formatDateTime } from '../../lib/dates';
+import { useEvent } from '../../context/EventContext';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-
-const EVENT_ID = 1;
 
 function calcPoints(p) {
   const gl = p.goles_local_pred, gv = p.goles_visitante_pred;
@@ -40,14 +39,16 @@ function PointsChip({ p }) {
 export default function AdminQuinielaView() {
   const { userId } = useParams();
   const navigate = useNavigate();
+  const { selectedEventId, selectedEvent } = useEvent();
   const [preds, setPreds] = useState([]);
   const [userName, setUserName] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
+    if (!selectedEventId) return;
     Promise.all([
-      api.get(`/predictions/user/${userId}/${EVENT_ID}`),
+      api.get(`/predictions/user/${userId}/${selectedEventId}`),
       api.get('/auth/users'),
     ]).then(([predRes, usersRes]) => {
       setPreds(predRes.data);
@@ -55,7 +56,7 @@ export default function AdminQuinielaView() {
       setUserName(u ? u.nombre_completo : `Usuario #${userId}`);
     }).catch(() => setError('No se pudo cargar la quiniela'))
       .finally(() => setLoading(false));
-  }, [userId]);
+  }, [userId, selectedEventId]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
   if (error) return <Alert severity="error" sx={{ mt: 2 }}>{error}</Alert>;
@@ -189,7 +190,7 @@ export default function AdminQuinielaView() {
         </Box>
       </Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-        Mundial 2026 — Fase de Grupos · Solo lectura
+        {selectedEvent?.nombre?.includes('Dieciseisavos') ? 'Mundial 2026 — Fase de Dieciseisavos · Solo lectura' : 'Mundial 2026 — Fase de Grupos · Solo lectura'}
       </Typography>
 
       {preds.length === 0 ? (

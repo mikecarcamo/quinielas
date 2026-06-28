@@ -176,7 +176,7 @@ export default function QuinielaForm() {
     if (!selectedEventId) return;
     setLoading(true);
     Promise.all([
-      api.get(`/matches?event_id=${selectedEventId}&fase=grupos`),
+      api.get(`/matches?event_id=${selectedEventId}`),
       api.get(`/predictions/has-quinela/${selectedEventId}`),
     ]).then(([mRes, hRes]) => {
       setMatches(mRes.data);
@@ -270,7 +270,10 @@ export default function QuinielaForm() {
         </Box>
         <EventSelector onlyApproved />
       </Box>
-      <Typography variant="body2" color="text.secondary">Fase de Grupos — Mundial 2026 · 12 grupos</Typography>
+      <Typography variant="body2" color="text.secondary">
+        {selectedEvent?.nombre?.includes('Dieciseisavos') ? 'Fase de Dieciseisavos' : 'Fase de Grupos'}
+        {selectedEvent?.nombre?.includes('Mundial') ? ' — Mundial 2026' : ''}
+      </Typography>
       <Box sx={{ mb: 3 }}>
         <Chip
           icon={<SportsSoccerIcon />}
