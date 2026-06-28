@@ -21,7 +21,7 @@ export default function AdminMatches() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState({ open: false, match: null });
-  const [form, setForm] = useState({ goles_local: '', goles_visitante: '', ganador_penales: '', finalizar: true });
+  const [form, setForm] = useState({ goles_local: '', goles_visitante: '', ganador_penales: '', finalizar: true, soloEnCurso: false });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -46,6 +46,7 @@ export default function AdminMatches() {
       goles_visitante: match.goles_visitante_real ?? '',
       ganador_penales: match.ganador_penales ?? '',
       finalizar: match.status !== 'en_curso',
+      soloEnCurso: false,
     });
     setDialog({ open: true, match });
     setError('');
@@ -56,14 +57,17 @@ export default function AdminMatches() {
     setSaving(true);
     try {
       const esEnCurso = dialog.match.status === 'en_curso';
+      const esPendiente = dialog.match.status === 'pendiente';
+      const debeFinalizar = esEnCurso ? form.finalizar : !form.soloEnCurso;
       const payload = {
         goles_local_real: Number(form.goles_local),
         goles_visitante_real: Number(form.goles_visitante),
         ganador_penales: form.ganador_penales || null,
         ...(esEnCurso && { finalizar: form.finalizar }),
+        ...(esPendiente && { finalizar: !form.soloEnCurso }),
       };
       await api.patch(`/matches/${dialog.match.id}/result`, payload);
-      setSuccess(form.finalizar ? 'Resultado guardado y puntos recalculados.' : 'Marcador parcial actualizado.');
+      setSuccess(debeFinalizar ? 'Resultado guardado y puntos recalculados.' : 'Marcador parcial actualizado.');
       setDialog({ open: false, match: null });
       load();
     } catch (err) {
@@ -266,12 +270,25 @@ export default function AdminMatches() {
               label="Marcar partido como finalizado (recalcula puntos)"
             />
           )}
+          {dialog.match?.status === 'pendiente' && (
+            <FormControlLabel
+              sx={{ mt: 2 }}
+              control={
+                <Checkbox
+                  checked={form.soloEnCurso}
+                  onChange={(e) => setForm({ ...form, soloEnCurso: e.target.checked })}
+                  color="warning"
+                />
+              }
+              label="Solo marcar como en curso (no finalizar)"
+            />
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialog({ open: false, match: null })}>Cancelar</Button>
           <Button variant="contained" onClick={handleSave} disabled={saving}
-            color={dialog.match?.status === 'en_curso' && !form.finalizar ? 'warning' : 'primary'}>
-            {saving ? 'Guardando...' : dialog.match?.status === 'en_curso' && !form.finalizar ? 'Actualizar marcador parcial' : 'Guardar resultado'}
+            color={(dialog.match?.status === 'en_curso' && !form.finalizar) || form.soloEnCurso ? 'warning' : 'primary'}>
+            {saving ? 'Guardando...' : (dialog.match?.status === 'en_curso' && !form.finalizar) || form.soloEnCurso ? 'Actualizar marcador parcial' : 'Guardar resultado'}
           </Button>
         </DialogActions>
       </Dialog>
