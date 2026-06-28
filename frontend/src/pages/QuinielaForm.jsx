@@ -132,16 +132,16 @@ function MatchPredictionRow({ match, value, onChange, disabled, onViewPrediction
             sx={{ bgcolor: 'background.default' }}
           >
             <ToggleButton value="local" sx={{
-              px: 1, py: 0.2, fontSize: 12,
-              '&.Mui-selected': { bgcolor: 'primary.main', color: 'white', fontWeight: 700 },
-              '&.Mui-selected:hover': { bgcolor: 'primary.dark', color: 'white' },
+              px: 1, py: 0.2, fontSize: 12, borderColor: 'warning.main',
+              '&.Mui-selected': { bgcolor: 'warning.main', color: 'black', fontWeight: 700, borderColor: 'warning.main' },
+              '&.Mui-selected:hover': { bgcolor: 'warning.dark', color: 'black' },
             }}>
               Gana {match.local} (penales)
             </ToggleButton>
             <ToggleButton value="visitante" sx={{
-              px: 1, py: 0.2, fontSize: 12,
-              '&.Mui-selected': { bgcolor: 'primary.main', color: 'white', fontWeight: 700 },
-              '&.Mui-selected:hover': { bgcolor: 'primary.dark', color: 'white' },
+              px: 1, py: 0.2, fontSize: 12, borderColor: 'warning.main',
+              '&.Mui-selected': { bgcolor: 'warning.main', color: 'black', fontWeight: 700, borderColor: 'warning.main' },
+              '&.Mui-selected:hover': { bgcolor: 'warning.dark', color: 'black' },
             }}>
               Gana {match.visitante} (penales)
             </ToggleButton>
