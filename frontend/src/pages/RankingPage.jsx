@@ -1,15 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, Chip, CircularProgress, Card, CardContent, Grid, Avatar, Tooltip, IconButton, Button,
+  TableRow, Paper, Chip, CircularProgress, Card, CardContent, Grid, Avatar, Button,
 } from '@mui/material';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
-import { useNavigate } from 'react-router-dom';
 import api from '../api/axios';
-import { useAuth } from '../context/AuthContext';
 import { useEvent } from '../context/EventContext';
 import EventSelector from '../components/EventSelector';
 
@@ -18,10 +15,7 @@ const medalColors = { 1: '#D4A017', 2: '#9E9E9E', 3: '#CD7F32' };
 export default function RankingPage() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [hasQuiniela, setHasQuiniela] = useState(false);
-  const { user } = useAuth();
   const { selectedEventId } = useEvent();
-  const navigate = useNavigate();
 
   useEffect(() => {
     if (!selectedEventId) return;
@@ -29,12 +23,7 @@ export default function RankingPage() {
     api.get(`/ranking/${selectedEventId}`)
       .then((r) => setData(r.data))
       .finally(() => setLoading(false));
-    if (user) {
-      api.get(`/predictions/has-quinela/${selectedEventId}`)
-        .then((r) => setHasQuiniela(r.data.hasQuiniela))
-        .catch(() => {});
-    }
-  }, [selectedEventId, user]);
+  }, [selectedEventId]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
   if (!data) return <Typography>No se pudo cargar el ranking.</Typography>;
@@ -127,7 +116,6 @@ export default function RankingPage() {
               <TableCell>Participante</TableCell>
               <TableCell align="center">Puntos</TableCell>
               <TableCell align="center">Premio estimado</TableCell>
-              {(user?.role === 'admin' || hasQuiniela) && <TableCell align="center">Quiniela</TableCell>}
             </TableRow>
           </TableHead>
           <TableBody>
@@ -163,22 +151,11 @@ export default function RankingPage() {
                     {row.premio > 0 ? `Q${row.premio.toLocaleString()}` : '—'}
                   </Typography>
                 </TableCell>
-                {(user?.role === 'admin' || hasQuiniela) && (
-                  <TableCell align="center">
-                    <Tooltip title={row.user_id === user?.id ? 'Ver mi quiniela' : `Ver quiniela de ${row.nombre_completo}`}>
-                      <IconButton size="small" color="primary"
-                        onClick={() => navigate(user?.role === 'admin' ? `/admin/quiniela/${row.user_id}` : `/quiniela-ver/${row.user_id}`)}
-                        sx={{ border: '1px solid', borderColor: 'primary.main' }}>
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                )}
               </TableRow>
             ))}
             {ranking.length === 0 && (
               <TableRow>
-                <TableCell colSpan={(user?.role === 'admin' || hasQuiniela) ? 5 : 4} align="center">
+                <TableCell colSpan={4} align="center">
                   <Typography color="text.secondary" sx={{ py: 4 }}>Aún no hay participantes</Typography>
                 </TableCell>
               </TableRow>
