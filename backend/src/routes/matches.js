@@ -2,6 +2,7 @@ const express = require('express');
 const db = require('../db/database');
 const { verifyToken, requireAdmin } = require('../middleware/auth');
 const { recalculateMatchPoints } = require('../lib/scoring');
+const { notifyScoreUpdate } = require('../lib/sse');
 
 const router = express.Router();
 
@@ -71,6 +72,7 @@ router.patch('/:id/result', verifyToken, requireAdmin, (req, res) => {
   recalculateMatchPoints(db, Number(req.params.id));
 
   const updated = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
+  notifyScoreUpdate(updated);
   res.json(updated);
 });
 

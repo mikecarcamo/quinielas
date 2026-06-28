@@ -76,6 +76,7 @@ const predictionRoutes = require('./src/routes/predictions');
 const paymentRoutes = require('./src/routes/payments');
 const rankingRoutes = require('./src/routes/ranking');
 const eventRoutes = require('./src/routes/events');
+const { addClient } = require('./src/lib/sse');
 
 const app = express();
 const PORT = process.env.PORT || 4001;
@@ -118,6 +119,17 @@ app.use('/api/events', eventRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
 app.get('/api/version', (req, res) => res.json({ version: APP_VERSION, builtAt: new Date().toISOString() }));
+
+// Server-Sent Events: notificaciones en tiempo real
+app.get('/api/events', (req, res) => {
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.flushHeaders();
+  res.write(`event: connected\ndata: ${JSON.stringify({ message: 'Conectado a eventos en vivo' })}\n\n`);
+  addClient(res);
+});
 
 // ── Endpoints temporales de administración (protegidos por ADMIN_SECRET) ──
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'quiniela-admin-2026';

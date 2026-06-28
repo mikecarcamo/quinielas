@@ -26,8 +26,17 @@ export default function RankingPage() {
         .finally(() => setLoading(false));
     };
     fetchRanking();
-    const interval = setInterval(fetchRanking, 30000); // actualizar cada 30 segundos
-    return () => clearInterval(interval);
+
+    // SSE: actualizar ranking cuando cambie el marcador de un partido
+    const es = new EventSource('/api/events');
+    es.addEventListener('score_update', (e) => {
+      const evt = JSON.parse(e.data);
+      if (evt.event_id === selectedEventId) fetchRanking();
+    });
+    es.addEventListener('error', () => {
+      // Reintentar conexión automáticamente; EventSource lo hace por defecto
+    });
+    return () => es.close();
   }, [selectedEventId]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;

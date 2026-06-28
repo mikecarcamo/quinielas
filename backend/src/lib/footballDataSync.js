@@ -10,6 +10,7 @@
  */
 
 const https = require('https');
+const { notifyScoreUpdate } = require('./sse');
 
 const API_KEY  = process.env.FOOTBALL_DATA_API_KEY;
 const BASE_URL = 'api.football-data.org';
@@ -227,6 +228,10 @@ async function syncMatches(db, recalculateMatchPoints) {
 
       // Recalcular puntos en tiempo real tanto para en_curso como finalizado
       recalculateMatchPoints(db, match.id);
+
+      // Notificar a clientes conectados para actualizar ranking/vistas
+      const updatedMatch = db.prepare('SELECT * FROM matches WHERE id = ?').get(match.id);
+      if (updatedMatch) notifyScoreUpdate(updatedMatch);
 
       console.log(`[FIFA-SYNC] ⚽ ${homeTeam} ${scoreHome}-${scoreAway} ${awayTeam} [${apiStatus}]`);
       synced++;
