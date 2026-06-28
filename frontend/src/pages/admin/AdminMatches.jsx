@@ -241,10 +241,18 @@ export default function AdminMatches() {
                 size="small"
                 sx={{ bgcolor: 'background.default' }}
               >
-                <ToggleButton value="local" sx={{ px: 1, py: 0.2, fontSize: 12 }}>
+                <ToggleButton value="local" sx={{
+                  px: 1, py: 0.2, fontSize: 12,
+                  '&.Mui-selected': { bgcolor: 'primary.main', color: 'white', fontWeight: 700 },
+                  '&.Mui-selected:hover': { bgcolor: 'primary.dark', color: 'white' },
+                }}>
                   Gana {dialog.match?.local} (penales)
                 </ToggleButton>
-                <ToggleButton value="visitante" sx={{ px: 1, py: 0.2, fontSize: 12 }}>
+                <ToggleButton value="visitante" sx={{
+                  px: 1, py: 0.2, fontSize: 12,
+                  '&.Mui-selected': { bgcolor: 'primary.main', color: 'white', fontWeight: 700 },
+                  '&.Mui-selected:hover': { bgcolor: 'primary.dark', color: 'white' },
+                }}>
                   Gana {dialog.match?.visitante} (penales)
                 </ToggleButton>
               </ToggleButtonGroup>
