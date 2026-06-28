@@ -5,6 +5,9 @@
  * Solo actúa una vez por partido. FIFA sync o admin pueden corregir el marcador real después.
  */
 
+const { recalculateMatchPoints } = require('./scoring');
+const { notifyScoreUpdate } = require('./sse');
+
 function getGuatemalaNowISO() {
   const gt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' }));
   return gt.toISOString().slice(0, 19).replace('T', ' ');
@@ -36,6 +39,9 @@ function startAutoLockMatches(db) {
         updateAll(rows);
 
         for (const m of rows) {
+          recalculateMatchPoints(db, m.id);
+          const updatedMatch = db.prepare('SELECT * FROM matches WHERE id = ?').get(m.id);
+          if (updatedMatch) notifyScoreUpdate(updatedMatch);
           console.log(`[AUTO-LOCK] 🔒 ${m.local} vs ${m.visitante} bloqueado (${m.fecha} ${m.hora || '00:00'})`);
         }
         console.log(`[AUTO-LOCK] ${rows.length} partido(s) bloqueado(s)`);
