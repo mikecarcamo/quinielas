@@ -68,6 +68,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
+const { execSync } = require('child_process');
 
 const authRoutes = require('./src/routes/auth');
 const matchRoutes = require('./src/routes/matches');
@@ -78,6 +79,14 @@ const eventRoutes = require('./src/routes/events');
 
 const app = express();
 const PORT = process.env.PORT || 4001;
+
+// Versión del despliegue: hash del commit, variable de entorno o fallback
+let APP_VERSION;
+try {
+  APP_VERSION = execSync('git rev-parse HEAD', { cwd: __dirname, encoding: 'utf8' }).trim();
+} catch {
+  APP_VERSION = process.env.RAILWAY_GIT_COMMIT_SHA || process.env.RENDER_GIT_COMMIT_SHA || process.env.COMMIT_REF || 'dev';
+}
 
 const dataDir = path.join('/app/data');
 if (!fs.existsSync(dataDir)) {
@@ -108,6 +117,7 @@ app.use('/api/ranking', rankingRoutes);
 app.use('/api/events', eventRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));
+app.get('/api/version', (req, res) => res.json({ version: APP_VERSION, builtAt: new Date().toISOString() }));
 
 // ── Endpoints temporales de administración (protegidos por ADMIN_SECRET) ──
 const ADMIN_SECRET = process.env.ADMIN_SECRET || 'quiniela-admin-2026';

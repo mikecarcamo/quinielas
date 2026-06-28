@@ -7,6 +7,7 @@ import { CircularProgress, Box } from '@mui/material';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Layout from './components/Layout';
+import VersionChecker from './components/VersionChecker';
 import DashboardPage from './pages/DashboardPage';
 import QuinielaForm from './pages/QuinielaForm';
 import MiQuiniela from './pages/MiQuiniela';
@@ -62,6 +63,7 @@ export default function App() {
     <AuthProvider>
       <EventProvider>
         <AppRoutes />
+        <VersionChecker />
       </EventProvider>
     </AuthProvider>
   );
