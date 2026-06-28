@@ -253,7 +253,7 @@ export default function QuinielaForm() {
   const handleChange = useCallback((matchId, field, val) => {
     setPredictions((prev) => ({
       ...prev,
-      [matchId]: { ...prev[matchId], [field]: isNaN(val) ? '' : val },
+      [matchId]: { ...prev[matchId], [field]: field.startsWith('goles_') ? (isNaN(val) ? '' : val) : val },
     }));
   }, []);
 
