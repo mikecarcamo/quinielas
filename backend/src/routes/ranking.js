@@ -18,8 +18,7 @@ router.get('/:event_id', (req, res) => {
       COUNT(p.id) as total_predicciones
     FROM users u
     JOIN payments pay ON pay.user_id = u.id AND pay.event_id = ? AND pay.status = 'aprobado'
-    LEFT JOIN predictions p ON p.user_id = u.id
-    LEFT JOIN matches m ON p.match_id = m.id AND m.event_id = ?
+    LEFT JOIN predictions p ON p.user_id = u.id AND p.match_id IN (SELECT id FROM matches WHERE event_id = ?)
     WHERE u.is_active = 1
     GROUP BY u.id
     ORDER BY total_puntos DESC
