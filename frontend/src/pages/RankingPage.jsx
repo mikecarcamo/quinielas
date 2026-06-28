@@ -19,10 +19,15 @@ export default function RankingPage() {
 
   useEffect(() => {
     if (!selectedEventId) return;
-    setLoading(true);
-    api.get(`/ranking/${selectedEventId}`)
-      .then((r) => setData(r.data))
-      .finally(() => setLoading(false));
+    const fetchRanking = () => {
+      setLoading(true);
+      api.get(`/ranking/${selectedEventId}`)
+        .then((r) => setData(r.data))
+        .finally(() => setLoading(false));
+    };
+    fetchRanking();
+    const interval = setInterval(fetchRanking, 30000); // actualizar cada 30 segundos
+    return () => clearInterval(interval);
   }, [selectedEventId]);
 
   if (loading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 6 }}><CircularProgress /></Box>;
