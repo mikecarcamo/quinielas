@@ -55,8 +55,8 @@ router.post('/bulk', verifyToken, (req, res) => {
   }
 
   const insertPred = db.prepare(`
-    INSERT OR IGNORE INTO predictions (user_id, match_id, goles_local_pred, goles_visitante_pred, puntos_obtenidos)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT OR IGNORE INTO predictions (user_id, match_id, goles_local_pred, goles_visitante_pred, pred_ganador_penales, puntos_obtenidos)
+    VALUES (?, ?, ?, ?, ?, ?)
   `);
 
   const saveAll = db.transaction((preds) => {
@@ -74,14 +74,21 @@ router.post('/bulk', verifyToken, (req, res) => {
         throw new Error(`Pronóstico incompleto para partido ${p.match_id}`);
       }
 
+      // En fase eliminatoria, empate requiere ganador en penales
+      const isEliminatoria = match.fase && match.fase !== 'grupos';
+      const predEmpate = Number(p.goles_local_pred) === Number(p.goles_visitante_pred);
+      if (isEliminatoria && predEmpate && !p.pred_ganador_penales) {
+        throw new Error(`En ${match.local} vs ${match.visitante} debes elegir quién gana en penales.`);
+      }
+
       let pts = 0;
       if (match.status === 'finalizado') {
         pts = calculatePoints(
-          { goles_local_pred: p.goles_local_pred, goles_visitante_pred: p.goles_visitante_pred },
-          { goles_local_real: match.goles_local_real, goles_visitante_real: match.goles_visitante_real }
+          { goles_local_pred: p.goles_local_pred, goles_visitante_pred: p.goles_visitante_pred, pred_ganador_penales: p.pred_ganador_penales },
+          { goles_local_real: match.goles_local_real, goles_visitante_real: match.goles_visitante_real, ganador_penales: match.ganador_penales, fase: match.fase }
         );
       }
-      insertPred.run(userId, p.match_id, p.goles_local_pred, p.goles_visitante_pred, pts);
+      insertPred.run(userId, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.pred_ganador_penales || null, pts);
     }
   });
 
@@ -105,11 +112,12 @@ router.put('/bulk', verifyToken, (req, res) => {
   if (!check.allowed) return res.status(403).json({ error: check.reason });
 
   const upsert = db.prepare(`
-    INSERT INTO predictions (user_id, match_id, goles_local_pred, goles_visitante_pred, puntos_obtenidos)
-    VALUES (?, ?, ?, ?, ?)
+    INSERT INTO predictions (user_id, match_id, goles_local_pred, goles_visitante_pred, pred_ganador_penales, puntos_obtenidos)
+    VALUES (?, ?, ?, ?, ?, ?)
     ON CONFLICT(user_id, match_id) DO UPDATE SET
       goles_local_pred = excluded.goles_local_pred,
       goles_visitante_pred = excluded.goles_visitante_pred,
+      pred_ganador_penales = excluded.pred_ganador_penales,
       puntos_obtenidos = excluded.puntos_obtenidos
   `);
 
@@ -124,14 +132,21 @@ router.put('/bulk', verifyToken, (req, res) => {
         throw new Error(`El partido ${match.local} vs ${match.visitante} ya tiene resultado y no puede modificarse.`);
       }
 
+      // En fase eliminatoria, empate requiere ganador en penales
+      const isEliminatoria = match.fase && match.fase !== 'grupos';
+      const predEmpate = Number(p.goles_local_pred) === Number(p.goles_visitante_pred);
+      if (isEliminatoria && predEmpate && !p.pred_ganador_penales) {
+        throw new Error(`En ${match.local} vs ${match.visitante} debes elegir quién gana en penales.`);
+      }
+
       let pts = 0;
       if (match.status === 'finalizado') {
         pts = calculatePoints(
-          { goles_local_pred: p.goles_local_pred, goles_visitante_pred: p.goles_visitante_pred },
-          { goles_local_real: match.goles_local_real, goles_visitante_real: match.goles_visitante_real }
+          { goles_local_pred: p.goles_local_pred, goles_visitante_pred: p.goles_visitante_pred, pred_ganador_penales: p.pred_ganador_penales },
+          { goles_local_real: match.goles_local_real, goles_visitante_real: match.goles_visitante_real, ganador_penales: match.ganador_penales, fase: match.fase }
         );
       }
-      upsert.run(userId, p.match_id, p.goles_local_pred, p.goles_visitante_pred, pts);
+      upsert.run(userId, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.pred_ganador_penales || null, pts);
     }
   });
 
@@ -149,9 +164,9 @@ router.get('/my/:event_id', verifyToken, (req, res) => {
 
   const rows = db.prepare(`
     SELECT
-      p.id, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.puntos_obtenidos,
+      p.id, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.pred_ganador_penales, p.puntos_obtenidos,
       m.local, m.visitante, m.fecha, m.grupo, m.fase,
-      m.goles_local_real, m.goles_visitante_real, m.status as match_status
+      m.goles_local_real, m.goles_visitante_real, m.ganador_penales, m.status as match_status
     FROM predictions p
     JOIN matches m ON p.match_id = m.id
     WHERE p.user_id = ? AND m.event_id = ?
@@ -167,9 +182,9 @@ router.get('/user/:user_id/:event_id', verifyToken, (req, res) => {
 
   const rows = db.prepare(`
     SELECT
-      p.id, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.puntos_obtenidos,
+      p.id, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.pred_ganador_penales, p.puntos_obtenidos,
       m.local, m.visitante, m.fecha, m.grupo, m.fase,
-      m.goles_local_real, m.goles_visitante_real, m.status as match_status
+      m.goles_local_real, m.goles_visitante_real, m.ganador_penales, m.status as match_status
     FROM predictions p
     JOIN matches m ON p.match_id = m.id
     WHERE p.user_id = ? AND m.event_id = ?
@@ -195,9 +210,9 @@ router.get('/view/:user_id/:event_id', verifyToken, (req, res) => {
 
   const rows = db.prepare(`
     SELECT
-      p.id, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.puntos_obtenidos,
+      p.id, p.match_id, p.goles_local_pred, p.goles_visitante_pred, p.pred_ganador_penales, p.puntos_obtenidos,
       m.local, m.visitante, m.fecha, m.grupo, m.fase,
-      m.goles_local_real, m.goles_visitante_real, m.status as match_status
+      m.goles_local_real, m.goles_visitante_real, m.ganador_penales, m.status as match_status
     FROM predictions p
     JOIN matches m ON p.match_id = m.id
     WHERE p.user_id = ? AND m.event_id = ?
@@ -243,9 +258,11 @@ router.get('/match/:match_id', verifyToken, (req, res) => {
       u.nombre_completo,
       p.goles_local_pred,
       p.goles_visitante_pred,
+      p.pred_ganador_penales,
       p.puntos_obtenidos,
       m.goles_local_real,
       m.goles_visitante_real,
+      m.ganador_penales,
       m.status as match_status
     FROM predictions p
     JOIN users u ON p.user_id = u.id

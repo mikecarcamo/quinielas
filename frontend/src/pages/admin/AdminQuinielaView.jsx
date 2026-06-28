@@ -23,6 +23,20 @@ function calcPoints(p) {
   if (gl === rl) pts += 5;
   if (gv === rv) pts += 5;
   if (Math.sign(gl - gv) === Math.sign(rl - rv)) pts += 2;
+
+  // Extra por ganador en penales en fase eliminatoria
+  const isEliminatoria = p.fase && p.fase !== 'grupos';
+  if (
+    isEliminatoria &&
+    rl === rv &&
+    gl === gv &&
+    p.ganador_penales &&
+    p.pred_ganador_penales &&
+    p.ganador_penales === p.pred_ganador_penales
+  ) {
+    pts += 2;
+  }
+
   return pts;
 }
 
@@ -32,7 +46,7 @@ function PointsChip({ p }) {
   if (p.match_status === 'en_curso') {
     return <Chip label={pts > 0 ? `🔴 +${pts} pts` : '🔴 En curso'} size="small" color="warning" />;
   }
-  const color = pts === 12 ? 'success' : pts >= 7 ? 'warning' : pts > 0 ? 'default' : 'error';
+  const color = pts === 14 ? 'success' : pts === 12 ? 'success' : pts >= 7 ? 'warning' : pts > 0 ? 'default' : 'error';
   return <Chip label={`+${pts} pts`} size="small" color={color} />;
 }
 
@@ -121,8 +135,14 @@ export default function AdminQuinielaView() {
         head: [['Partido', 'Fecha', 'Pronóstico', 'Real', 'Pts']],
         body: gPreds.map((p) => {
           const pts = calcPoints(p);
-          const pronostico = `${p.goles_local_pred} - ${p.goles_visitante_pred}`;
-          const real = p.match_status === 'finalizado' ? `${p.goles_local_real} - ${p.goles_visitante_real}` : '—';
+          let pronostico = `${p.goles_local_pred} - ${p.goles_visitante_pred}`;
+          if (p.pred_ganador_penales) {
+            pronostico += ` (P: ${p.pred_ganador_penales === 'local' ? p.local : p.visitante})`;
+          }
+          let real = p.match_status === 'finalizado' ? `${p.goles_local_real} - ${p.goles_visitante_real}` : '—';
+          if (p.ganador_penales) {
+            real += ` (P: ${p.ganador_penales === 'local' ? p.local : p.visitante})`;
+          }
           const ptsStr = p.match_status === 'finalizado' ? (pts !== null ? `+${pts}` : '—') : 'Pend.';
           return [
             `${p.local} vs ${p.visitante}`,
@@ -258,11 +278,21 @@ export default function AdminQuinielaView() {
                               <Typography variant="body1" fontWeight={700} color="primary.light">
                                 {p.goles_local_pred} – {p.goles_visitante_pred}
                               </Typography>
+                              {p.pred_ganador_penales && (
+                                <Typography variant="caption" color="info.main">
+                                  P: {p.pred_ganador_penales === 'local' ? p.local : p.visitante}
+                                </Typography>
+                              )}
                             </TableCell>
                             <TableCell align="center">
                               {(finalizado || enCurso) ? (
                                 <Typography variant="body1" fontWeight={700} sx={{ color: enCurso ? 'warning.main' : 'inherit' }}>
                                   {p.goles_local_real} – {p.goles_visitante_real}
+                                  {p.ganador_penales && (
+                                    <Typography component="span" variant="caption" color="info.main" sx={{ ml: 0.5 }}>
+                                      P: {p.ganador_penales === 'local' ? p.local : p.visitante}
+                                    </Typography>
+                                  )}
                                 </Typography>
                               ) : (
                                 <Typography variant="caption" color="text.secondary">—</Typography>

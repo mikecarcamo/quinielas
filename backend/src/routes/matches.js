@@ -26,20 +26,21 @@ router.get('/:id', verifyToken, (req, res) => {
 });
 
 router.post('/', verifyToken, requireAdmin, (req, res) => {
-  const { event_id, local, visitante, fecha, grupo, fase } = req.body;
+  const { event_id, local, visitante, fecha, grupo, fase, ganador_penales } = req.body;
   if (!event_id || !local || !visitante || !fecha) {
     return res.status(400).json({ error: 'event_id, local, visitante y fecha son requeridos' });
   }
+  const faseValue = fase || 'grupos';
   const result = db.prepare(`
-    INSERT INTO matches (event_id, local, visitante, fecha, grupo, fase)
-    VALUES (?, ?, ?, ?, ?, ?)
-  `).run(event_id, local, visitante, fecha, grupo || null, fase || 'grupos');
+    INSERT INTO matches (event_id, local, visitante, fecha, grupo, fase, ganador_penales)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `).run(event_id, local, visitante, fecha, grupo || null, faseValue, ganador_penales || null);
 
-  res.status(201).json({ id: result.lastInsertRowid, event_id, local, visitante, fecha, grupo, fase });
+  res.status(201).json({ id: result.lastInsertRowid, event_id, local, visitante, fecha, grupo, fase: faseValue, ganador_penales });
 });
 
 router.patch('/:id/result', verifyToken, requireAdmin, (req, res) => {
-  const { goles_local_real, goles_visitante_real, finalizar } = req.body;
+  const { goles_local_real, goles_visitante_real, ganador_penales, finalizar } = req.body;
   if (goles_local_real === undefined || goles_visitante_real === undefined) {
     return res.status(400).json({ error: 'Goles local y visitante requeridos' });
   }
@@ -52,12 +53,19 @@ router.patch('/:id/result', verifyToken, requireAdmin, (req, res) => {
   const debeFinalizarse = finalizar !== false || match.status !== 'en_curso';
   const nuevoStatus = debeFinalizarse ? 'finalizado' : 'en_curso';
 
+  // En fase eliminatoria, al finalizar con empate se requiere ganador de penales
+  const isEliminatoria = match.fase && match.fase !== 'grupos';
+  const esEmpate = Number(goles_local_real) === Number(goles_visitante_real);
+  if (isEliminatoria && esEmpate && nuevoStatus === 'finalizado' && !ganador_penales) {
+    return res.status(400).json({ error: 'En fase eliminatoria, empate requiere ganador de penales' });
+  }
+
   db.prepare(`
     UPDATE matches
-    SET goles_local_real = ?, goles_visitante_real = ?, status = ?,
+    SET goles_local_real = ?, goles_visitante_real = ?, ganador_penales = ?, status = ?,
         resultado_editado = ?
     WHERE id = ?
-  `).run(goles_local_real, goles_visitante_real, nuevoStatus, debeFinalizarse ? 1 : 0, req.params.id);
+  `).run(goles_local_real, goles_visitante_real, ganador_penales || null, nuevoStatus, debeFinalizarse ? 1 : 0, req.params.id);
 
   // Recalcular puntos en tiempo real tanto para marcador parcial (en_curso) como finalizado
   recalculateMatchPoints(db, Number(req.params.id));
@@ -87,7 +95,7 @@ router.post('/:id/reset-result', verifyToken, requireAdmin, (req, res) => {
 
   db.prepare(`
     UPDATE matches
-    SET goles_local_real = null, goles_visitante_real = null, status = 'pendiente', resultado_editado = 0
+    SET goles_local_real = null, goles_visitante_real = null, ganador_penales = null, status = 'pendiente', resultado_editado = 0
     WHERE id = ?
   `).run(req.params.id);
 

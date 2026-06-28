@@ -80,6 +80,21 @@ db.exec(`
   );
 `);
 
+// Migraciones adicionales: ganador en penales para fase eliminatoria
+try {
+  db.exec("ALTER TABLE matches ADD COLUMN ganador_penales TEXT CHECK(ganador_penales IN ('local','visitante'))");
+  console.log('Columna ganador_penales agregada a matches');
+} catch (e) {
+  // Columna ya existe
+}
+
+try {
+  db.exec("ALTER TABLE predictions ADD COLUMN pred_ganador_penales TEXT CHECK(pred_ganador_penales IN ('local','visitante'))");
+  console.log('Columna pred_ganador_penales agregada a predictions');
+} catch (e) {
+  // Columna ya existe
+}
+
 const existingEvent = db.prepare('SELECT id FROM events WHERE nombre = ?').get('Mundial 2026');
 let eventId;
 if (!existingEvent) {

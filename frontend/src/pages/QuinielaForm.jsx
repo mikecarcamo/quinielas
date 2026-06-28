@@ -4,7 +4,7 @@ import {
   CircularProgress, Divider, Grid, Accordion, AccordionSummary, AccordionDetails,
   LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions,
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper,
-  IconButton, Tooltip,
+  IconButton, Tooltip, ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import SportsSoccerIcon from '@mui/icons-material/SportsSoccer';
 import LockIcon from '@mui/icons-material/Lock';
@@ -18,14 +18,21 @@ import { useEvent } from '../context/EventContext';
 import EventSelector from '../components/EventSelector';
 import { formatDate } from '../lib/dates';
 
-function isPredFilled(p) {
-  return p && p.goles_local !== '' && p.goles_local !== undefined && p.goles_visitante !== '' && p.goles_visitante !== undefined;
+function isPredFilled(p, match) {
+  const golesOk = p && p.goles_local !== '' && p.goles_local !== undefined && p.goles_visitante !== '' && p.goles_visitante !== undefined;
+  if (!golesOk) return false;
+  const isEliminatoria = match?.fase && match.fase !== 'grupos';
+  const empate = Number(p.goles_local) === Number(p.goles_visitante);
+  if (isEliminatoria && empate) {
+    return p.pred_ganador_penales !== '' && p.pred_ganador_penales !== undefined && p.pred_ganador_penales !== null;
+  }
+  return true;
 }
 
 
 function MatchPredictionRow({ match, value, onChange, disabled, onViewPredictions, hasQuiniela }) {
   const hora = match.hora || '—';
-  const filled = isPredFilled(value);
+  const filled = isPredFilled(value, match);
   const finalizado = match.status === 'finalizado';
   const enCurso = match.status === 'en_curso';
   const tieneMarcador = match.goles_local_real !== null && match.goles_local_real !== undefined;
@@ -107,12 +114,38 @@ function MatchPredictionRow({ match, value, onChange, disabled, onViewPrediction
           </Typography>
         </Box>
       </Box>
+
+      {/* Selector ganador en penales (solo fase eliminatoria + empate) */}
+      {match.fase && match.fase !== 'grupos' &&
+        value?.goles_local !== '' && value?.goles_local !== undefined &&
+        value?.goles_visitante !== '' && value?.goles_visitante !== undefined &&
+        Number(value.goles_local) === Number(value.goles_visitante) && (
+        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+          <ToggleButtonGroup
+            value={value?.pred_ganador_penales || ''}
+            exclusive
+            disabled={isLocked}
+            onChange={(e, newVal) => {
+              if (newVal !== null) onChange(match.id, 'pred_ganador_penales', newVal);
+            }}
+            size="small"
+            sx={{ bgcolor: 'background.default' }}
+          >
+            <ToggleButton value="local" sx={{ px: 1, py: 0.2, fontSize: 12 }}>
+              Gana {match.local} (penales)
+            </ToggleButton>
+            <ToggleButton value="visitante" sx={{ px: 1, py: 0.2, fontSize: 12 }}>
+              Gana {match.visitante} (penales)
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+      )}
     </Box>
   );
 }
 
 function DaySection({ fecha, matches, predictions, onChange, disabled, index, onViewPredictions, hasQuiniela }) {
-  const filled = matches.filter((m) => isPredFilled(predictions[m.id])).length;
+  const filled = matches.filter((m) => isPredFilled(predictions[m.id], m)).length;
   const total = matches.length;
   const complete = filled === total;
 
@@ -188,7 +221,11 @@ export default function QuinielaForm() {
         return api.get(`/predictions/my/${selectedEventId}`).then((pRes) => {
           const map = {};
           pRes.data.forEach((p) => {
-            map[p.match_id] = { goles_local: p.goles_local_pred, goles_visitante: p.goles_visitante_pred };
+            map[p.match_id] = {
+              goles_local: p.goles_local_pred,
+              goles_visitante: p.goles_visitante_pred,
+              pred_ganador_penales: p.pred_ganador_penales || '',
+            };
           });
           setPredictions(map);
         });
@@ -206,7 +243,7 @@ export default function QuinielaForm() {
   const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || a.id - b.id);
   const days = [...new Set(sortedMatches.map((m) => m.fecha))].sort();
   const openMatches = matches.filter((m) => m.status === 'pendiente' && m.goles_local_real === null);
-  const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id])).length;
+  const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id], m)).length;
 
   // Funciones para diálogo de pronósticos
   const openPredDialog = async (match) => {
@@ -224,8 +261,8 @@ export default function QuinielaForm() {
   };
 
   const handleSubmit = async () => {
-    const filledOpen = openMatches.filter((m) => isPredFilled(predictions[m.id]));
-    const pending = openMatches.filter((m) => !isPredFilled(predictions[m.id]));
+    const filledOpen = openMatches.filter((m) => isPredFilled(predictions[m.id], m));
+    const pending = openMatches.filter((m) => !isPredFilled(predictions[m.id], m));
 
     if (filledOpen.length === 0) return setError('No hay pronósticos para guardar.');
 
@@ -241,6 +278,7 @@ export default function QuinielaForm() {
         match_id: m.id,
         goles_local_pred: predictions[m.id].goles_local,
         goles_visitante_pred: predictions[m.id].goles_visitante,
+        pred_ganador_penales: predictions[m.id].pred_ganador_penales || null,
       }));
       if (hasQuiniela) {
         await api.put('/predictions/bulk', { event_id: selectedEventId, predictions: preds });

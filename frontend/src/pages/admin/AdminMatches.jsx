@@ -4,6 +4,7 @@ import {
   TableRow, Paper, Chip, IconButton, Dialog, DialogTitle, DialogContent,
   DialogActions, TextField, Button, Alert, Tooltip, CircularProgress,
   Accordion, AccordionSummary, AccordionDetails, FormControlLabel, Checkbox,
+  ToggleButton, ToggleButtonGroup,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
@@ -21,7 +22,7 @@ export default function AdminMatches() {
   const [matches, setMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [dialog, setDialog] = useState({ open: false, match: null });
-  const [form, setForm] = useState({ goles_local: '', goles_visitante: '', finalizar: true });
+  const [form, setForm] = useState({ goles_local: '', goles_visitante: '', ganador_penales: '', finalizar: true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -44,6 +45,7 @@ export default function AdminMatches() {
     setForm({
       goles_local: match.goles_local_real ?? '',
       goles_visitante: match.goles_visitante_real ?? '',
+      ganador_penales: match.ganador_penales ?? '',
       finalizar: match.status !== 'en_curso',
     });
     setDialog({ open: true, match });
@@ -55,11 +57,13 @@ export default function AdminMatches() {
     setSaving(true);
     try {
       const esEnCurso = dialog.match.status === 'en_curso';
-      await api.patch(`/matches/${dialog.match.id}/result`, {
+      const payload = {
         goles_local_real: Number(form.goles_local),
         goles_visitante_real: Number(form.goles_visitante),
+        ganador_penales: form.ganador_penales || null,
         ...(esEnCurso && { finalizar: form.finalizar }),
-      });
+      };
+      await api.patch(`/matches/${dialog.match.id}/result`, payload);
       setSuccess(form.finalizar ? 'Resultado guardado y puntos recalculados.' : 'Marcador parcial actualizado.');
       setDialog({ open: false, match: null });
       load();
@@ -163,6 +167,11 @@ export default function AdminMatches() {
                       {(m.status === 'finalizado' || m.status === 'en_curso') ? (
                         <Typography fontWeight={700} sx={{ fontSize: { xs: 13, sm: 15 }, color: m.status === 'en_curso' ? 'warning.main' : 'inherit' }}>
                           {m.goles_local_real} – {m.goles_visitante_real}
+                          {m.ganador_penales && (
+                            <Typography component="span" fontWeight={700} sx={{ fontSize: 11, color: 'info.main', ml: 0.5 }}>
+                              (P: {m.ganador_penales === 'local' ? m.local : m.visitante})
+                            </Typography>
+                          )}
                           {!!m.resultado_editado && <Typography component="span" color="warning.main" fontWeight={700}> *</Typography>}
                         </Typography>
                       ) : (
@@ -221,6 +230,26 @@ export default function AdminMatches() {
             <TextField label={dialog.match?.visitante} type="number" inputProps={{ min: 0 }}
               value={form.goles_visitante} onChange={(e) => setForm({ ...form, goles_visitante: e.target.value })} fullWidth />
           </Box>
+          {dialog.match?.fase && dialog.match?.fase !== 'grupos' &&
+            form.goles_local !== '' && form.goles_visitante !== '' &&
+            Number(form.goles_local) === Number(form.goles_visitante) && (
+            <Box sx={{ display: 'flex', justifyContent: 'center', mt: 2 }}>
+              <ToggleButtonGroup
+                value={form.ganador_penales || ''}
+                exclusive
+                onChange={(e, newVal) => { if (newVal !== null) setForm({ ...form, ganador_penales: newVal }); }}
+                size="small"
+                sx={{ bgcolor: 'background.default' }}
+              >
+                <ToggleButton value="local" sx={{ px: 1, py: 0.2, fontSize: 12 }}>
+                  Gana {dialog.match?.local} (penales)
+                </ToggleButton>
+                <ToggleButton value="visitante" sx={{ px: 1, py: 0.2, fontSize: 12 }}>
+                  Gana {dialog.match?.visitante} (penales)
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Box>
+          )}
           {dialog.match?.status === 'en_curso' && (
             <FormControlLabel
               sx={{ mt: 2 }}
@@ -267,7 +296,7 @@ export default function AdminMatches() {
                 <Chip label={`${predDialog.predictions.length} pronósticos`} color="primary" variant="outlined" />
                 {predDialog.match?.status !== 'pendiente' && (
                   <Chip 
-                    label={`Resultado: ${predDialog.match?.goles_local_real} – ${predDialog.match?.goles_visitante_real}`} 
+                    label={`Resultado: ${predDialog.match?.goles_local_real} – ${predDialog.match?.goles_visitante_real}${predDialog.match?.ganador_penales ? ' (P: ' + (predDialog.match?.ganador_penales === 'local' ? predDialog.match?.local : predDialog.match?.visitante) + ')' : ''}`} 
                     color={predDialog.match?.status === 'en_curso' ? 'warning' : 'success'} 
                   />
                 )}
@@ -296,6 +325,11 @@ export default function AdminMatches() {
                             <Typography variant="body2" fontWeight={700} color="primary.light">
                               {p.goles_local_pred} – {p.goles_visitante_pred}
                             </Typography>
+                            {p.pred_ganador_penales && (
+                              <Typography variant="caption" color="info.main">
+                                P: {p.pred_ganador_penales === 'local' ? predDialog.match?.local : predDialog.match?.visitante}
+                              </Typography>
+                            )}
                           </TableCell>
                           <TableCell align="center">
                             {(p.match_status === 'finalizado' || p.match_status === 'en_curso') ? (

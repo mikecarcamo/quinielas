@@ -1,7 +1,7 @@
 /**
  * Calcula los puntos obtenidos por una predicción.
- * @param {{ goles_local_pred: number, goles_visitante_pred: number }} pred
- * @param {{ goles_local_real: number, goles_visitante_real: number }} real
+ * @param {{ goles_local_pred: number, goles_visitante_pred: number, pred_ganador_penales?: string }} pred
+ * @param {{ goles_local_real: number, goles_visitante_real: number, ganador_penales?: string, fase?: string }} real
  * @returns {number} puntos
  */
 function calculatePoints(pred, real) {
@@ -23,6 +23,21 @@ function calculatePoints(pred, real) {
   const resultadoPred = Math.sign(pred.goles_local_pred - pred.goles_visitante_pred);
   if (resultadoReal === resultadoPred) points += 2;
 
+  // Puntos extra por ganador en penales en fase eliminatoria
+  const isEliminatoria = real.fase && real.fase !== 'grupos';
+  const realEmpate = resultadoReal === 0;
+  const predEmpate = resultadoPred === 0;
+  if (
+    isEliminatoria &&
+    realEmpate &&
+    predEmpate &&
+    real.ganador_penales &&
+    pred.pred_ganador_penales &&
+    real.ganador_penales === pred.pred_ganador_penales
+  ) {
+    points += 2;
+  }
+
   return points;
 }
 
@@ -41,8 +56,17 @@ function recalculateMatchPoints(db, matchId) {
   const updateMany = db.transaction((preds) => {
     for (const p of preds) {
       const pts = calculatePoints(
-        { goles_local_pred: p.goles_local_pred, goles_visitante_pred: p.goles_visitante_pred },
-        { goles_local_real: match.goles_local_real, goles_visitante_real: match.goles_visitante_real }
+        {
+          goles_local_pred: p.goles_local_pred,
+          goles_visitante_pred: p.goles_visitante_pred,
+          pred_ganador_penales: p.pred_ganador_penales,
+        },
+        {
+          goles_local_real: match.goles_local_real,
+          goles_visitante_real: match.goles_visitante_real,
+          ganador_penales: match.ganador_penales,
+          fase: match.fase,
+        }
       );
       update.run(pts, p.id);
     }
