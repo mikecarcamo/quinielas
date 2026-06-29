@@ -7,6 +7,7 @@ const STORAGE_KEY = 'app_version';
 
 export default function VersionChecker() {
   const [needsReload, setNeedsReload] = useState(false);
+  const [newVersion, setNewVersion] = useState(null);
 
   useEffect(() => {
     const checkVersion = async () => {
@@ -21,6 +22,7 @@ export default function VersionChecker() {
         }
 
         if (savedVersion !== currentVersion) {
+          setNewVersion(currentVersion);
           setNeedsReload(true);
         }
       } catch {
@@ -32,6 +34,11 @@ export default function VersionChecker() {
     const interval = setInterval(checkVersion, CHECK_INTERVAL);
     return () => clearInterval(interval);
   }, []);
+
+  const handleReload = () => {
+    if (newVersion) localStorage.setItem(STORAGE_KEY, newVersion);
+    window.location.reload();
+  };
 
   if (!needsReload) return null;
 
@@ -63,7 +70,7 @@ export default function VersionChecker() {
         size="small"
         variant="contained"
         color="primary"
-        onClick={() => window.location.reload()}
+        onClick={handleReload}
         sx={{ fontWeight: 700 }}
       >
         Recargar
