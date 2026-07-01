@@ -11,6 +11,7 @@ import WarningAmberIcon from '@mui/icons-material/WarningAmber';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import UndoIcon from '@mui/icons-material/Undo';
+import DeleteIcon from '@mui/icons-material/Delete';
 import api from '../../api/axios';
 import { FlagImg } from '../../lib/flags.jsx';
 import { useEvent } from '../../context/EventContext';
@@ -93,6 +94,18 @@ export default function AdminMatches() {
 
   const closePredDialog = () => {
     setPredDialog({ open: false, match: null, predictions: [], loading: false });
+  };
+
+  const handleDelete = async (match) => {
+    const ok = window.confirm(`¿Eliminar el partido ${match.local} vs ${match.visitante}?\nEsta acción no se puede deshacer.`);
+    if (!ok) return;
+    try {
+      await api.delete(`/matches/${match.id}`);
+      setSuccess('Partido eliminado correctamente.');
+      load();
+    } catch (err) {
+      setError(err.response?.data?.error || 'Error al eliminar');
+    }
   };
 
   const handleReset = async (match) => {
@@ -194,6 +207,13 @@ export default function AdminMatches() {
                       <Tooltip title="Deshacer resultado">
                         <IconButton size="small" onClick={() => handleReset(m)} color="error" sx={{ flexShrink: 0 }} disabled={resetting}>
                           <UndoIcon />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                    {m.status !== 'finalizado' && (
+                      <Tooltip title="Eliminar partido">
+                        <IconButton size="small" onClick={() => handleDelete(m)} color="error" sx={{ flexShrink: 0 }}>
+                          <DeleteIcon />
                         </IconButton>
                       </Tooltip>
                     )}
