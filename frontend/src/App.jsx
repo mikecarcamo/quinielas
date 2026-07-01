@@ -36,10 +36,10 @@ function AppRoutes() {
     <Routes>
       <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
       <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
-      <Route path="/ranking" element={<RankingPage />} />
 
       <Route path="/" element={<PrivateRoute><Layout /></PrivateRoute>}>
         <Route index element={<DashboardPage />} />
+        <Route path="ranking" element={<RankingPage />} />
         <Route path="quiniela" element={<QuinielaForm />} />
         <Route path="mi-quiniela" element={<MiQuiniela />} />
         <Route path="pago" element={<PaymentPage />} />
