@@ -190,7 +190,7 @@ export default function AdminMatches() {
                         <VisibilityIcon />
                       </IconButton>
                     </Tooltip>
-                    {m.fecha >= hoy && (m.goles_local_real !== null && m.goles_local_real !== undefined) && (
+                    {(m.goles_local_real !== null && m.goles_local_real !== undefined) && (
                       <Tooltip title="Deshacer resultado">
                         <IconButton size="small" onClick={() => handleReset(m)} color="error" sx={{ flexShrink: 0 }} disabled={resetting}>
                           <UndoIcon />
