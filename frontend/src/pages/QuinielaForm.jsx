@@ -161,7 +161,7 @@ function MatchPredictionRow({ match, value, onChange, disabled, onViewPrediction
   );
 }
 
-function DaySection({ fecha, matches, predictions, onChange, disabled, index, onViewPredictions, hasQuiniela }) {
+function DaySection({ fecha, matches, predictions, onChange, disabled, isExpandido, onViewPredictions, hasQuiniela }) {
   const filled = matches.filter((m) => isPredFilled(predictions[m.id], m)).length;
   const total = matches.length;
   const complete = filled === total;
@@ -169,7 +169,7 @@ function DaySection({ fecha, matches, predictions, onChange, disabled, index, on
   const fechaLabel = formatDate(fecha, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
   return (
-    <Accordion defaultExpanded={index < 3} disableGutters
+    <Accordion defaultExpanded={isExpandido} disableGutters
       sx={{ mb: 1.5, bgcolor: 'background.paper', border: '1px solid', borderColor: complete ? 'primary.dark' : 'divider', borderRadius: '12px !important', '&:before': { display: 'none' } }}>
       <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 1 }}>
@@ -259,6 +259,8 @@ export default function QuinielaForm() {
 
   const sortedMatches = [...matches].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || a.id - b.id);
   const days = [...new Set(sortedMatches.map((m) => m.fecha))].sort();
+  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' })).toISOString().split('T')[0];
+  const diaExpandido = days.includes(hoy) ? hoy : days.find((d) => d >= hoy) ?? days[days.length - 1];
   const openMatches = matches.filter((m) => m.status === 'pendiente' && m.goles_local_real === null);
   const totalFilled = openMatches.filter((m) => isPredFilled(predictions[m.id], m)).length;
 
@@ -363,7 +365,7 @@ export default function QuinielaForm() {
       <Box sx={{ mb: 3 }}>
         {days.map((fecha, i) => (
           <DaySection
-            key={fecha} fecha={fecha} index={i}
+            key={fecha} fecha={fecha} isExpandido={fecha === diaExpandido}
             matches={sortedMatches.filter((m) => m.fecha === fecha)}
             predictions={predictions}
             onChange={handleChange}
