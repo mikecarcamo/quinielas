@@ -86,6 +86,8 @@ export default function QuinielaView() {
   // Ordenar por fecha, hora, id (igual que QuinielaForm)
   const sortedPreds = [...preds].sort((a, b) => a.fecha.localeCompare(b.fecha) || (a.hora || '').localeCompare(b.hora || '') || a.id - b.id);
   const days = [...new Set(sortedPreds.map((p) => p.fecha))].sort();
+  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' })).toISOString().split('T')[0];
+  const diaExpandido = days.includes(hoy) ? hoy : days.find((d) => d >= hoy) ?? days[days.length - 1];
   const totalPts = preds.reduce((s, p) => (p.match_status === 'finalizado' || p.match_status === 'en_curso') ? s + (calcPoints(p) ?? 0) : s, 0);
   const played = preds.filter((p) => p.match_status === 'finalizado').length;
   const enCursoCount = preds.filter((p) => p.match_status === 'en_curso').length;
@@ -116,7 +118,7 @@ export default function QuinielaView() {
           const fechaLabel = formatDate(fecha, { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' });
 
           return (
-            <Accordion key={fecha} defaultExpanded={idx < 3} disableGutters
+            <Accordion key={fecha} defaultExpanded={fecha === diaExpandido} disableGutters
               sx={{ mb: 1.5, border: '1px solid', borderColor: 'divider', borderRadius: '10px !important', '&:before': { display: 'none' } }}>
               <AccordionSummary expandIcon={<ExpandMoreIcon />} sx={{ px: 2 }}>
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flex: 1, mr: 1, flexWrap: 'wrap' }}>
