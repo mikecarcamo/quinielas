@@ -27,7 +27,7 @@ const ISO = {
   // CAF
   'Marruecos': 'ma', 'Senegal': 'sn', 'Nigeria': 'ng',
   'Camerún': 'cm', 'Ghana': 'gh', 'Argelia': 'dz', 'Túnez': 'tn',
-  'Sudáfrica': 'za', 'Egipto': 'eg', 'Congo': 'cd', 'Cabo Verde': 'cv',
+  'Sudáfrica': 'za', 'Egipto': 'eg', 'Congo': 'cd', 'RD Congo': 'cd', 'Cabo Verde': 'cv',
   'Costa de Marfil': 'ci', 'Kazajistán': 'kz',
 };
 
