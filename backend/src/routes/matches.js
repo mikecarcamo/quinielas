@@ -86,9 +86,8 @@ router.post('/:id/reset-result', verifyToken, requireAdmin, (req, res) => {
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
   if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
 
-  const hoy = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Guatemala' })).toISOString().split('T')[0];
-  if (match.fecha < hoy) {
-    return res.status(400).json({ error: 'Solo se pueden resetear partidos de hoy o futuros' });
+  if (match.status === 'finalizado') {
+    return res.status(400).json({ error: 'No se puede resetear un partido finalizado' });
   }
 
   if (match.goles_local_real === null && match.goles_visitante_real === null) {
