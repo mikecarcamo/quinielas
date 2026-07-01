@@ -86,11 +86,7 @@ router.post('/:id/reset-result', verifyToken, requireAdmin, (req, res) => {
   const match = db.prepare('SELECT * FROM matches WHERE id = ?').get(req.params.id);
   if (!match) return res.status(404).json({ error: 'Partido no encontrado' });
 
-  if (match.status === 'finalizado') {
-    return res.status(400).json({ error: 'No se puede resetear un partido finalizado' });
-  }
-
-  if (match.goles_local_real === null && match.goles_visitante_real === null) {
+  if (match.goles_local_real === null && match.goles_visitante_real === null && match.status === 'pendiente') {
     return res.status(400).json({ error: 'El partido no tiene marcador' });
   }
 
